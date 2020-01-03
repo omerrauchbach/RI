@@ -8,6 +8,7 @@ import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -481,5 +482,17 @@ public class Controller {
     }
     private boolean alreadyIndexedAll() {
         return alreadyIndexedWithStemming && alreadyIndexedWithoutStemming;
+    }
+
+    public void onRun(ActionEvent actionEvent) {
+    }
+
+    public void onBrowseQuery(ActionEvent actionEvent) {
+    }
+
+    public void onSaveResults(ActionEvent actionEvent) {
+    }
+
+    public void onBrowseResults(ActionEvent actionEvent) {
     }
 }
