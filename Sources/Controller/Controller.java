@@ -4,6 +4,7 @@ import Part_1.Document;
 import Part_1.Indexer;
 import Part_1.Parse;
 import Part_1.ReadFile;
+import Part_2.Searcher;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -49,8 +50,11 @@ public class Controller {
     public boolean stemm = false;
     public static BlockingQueue<Document> currChunk = new LinkedBlockingQueue<>(5000);
     ReadFile rd;
+
     public TextField queryText;
+    public TextField QueryFilePath ;
     public String query;
+    public CheckBox semantics;
 
 
     public void onStart(){
@@ -100,17 +104,8 @@ public class Controller {
 
                 displayInfo(infoToDisplay);
                 startsIndexing = false;
-               /* try {
-                    sortByValue();
-                    onlyNumbers();
-
-
-                } catch (IOException e){
-                    e.printStackTrace();
-            }*/
 
                 System.out.println("Done!!!!!!!");
-
             }
         }
     }
@@ -456,11 +451,21 @@ public class Controller {
         return alreadyIndexedWithStemming && alreadyIndexedWithoutStemming;
     }
 
-    public void onRun(ActionEvent actionEvent) {
+
+    private void onRun(String query) {
+        Searcher searcher = new Searcher(query, null, semantics.isSelected());
+        Thread runQueryThread = new Thread(searcher);
+        runQueryThread.start();
+        try {
+            runQueryThread.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        searcher.processQuery(); //updates the relevant docs for queryyyy
     }
 
-    public void onBrowseQuery(ActionEvent actionEvent) {
-    }
+    public void onBrowseQuery() { Browse(QueryFilePath); }
+
 
     public void onSaveResults(ActionEvent actionEvent) {
     }

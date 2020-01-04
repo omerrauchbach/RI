@@ -20,7 +20,7 @@
          <font>
             <Font name="System Bold" size="18.0" />
          </font></Button>
-        <TextField fx:id="query" layoutX="204.0" layoutY="205.0" prefHeight="27.0" prefWidth="299.0" />
+        <TextField fx:id="queryInput" layoutX="204.0" layoutY="205.0" prefHeight="27.0" prefWidth="299.0" />
         <Label layoutX="158.0" layoutY="211.0" prefHeight="27.0" prefWidth="57.0" text="Query" />
         <Button fx:id="browse_Query" layoutX="419.0" layoutY="61.0" mnemonicParsing="false" onAction="#onBrowseQuery" text="Browse" />
         <TextField fx:id="queryPath" layoutX="251.0" layoutY="239.0" />
