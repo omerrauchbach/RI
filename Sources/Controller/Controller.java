@@ -48,14 +48,12 @@ public class Controller {
     public String loadDicPath;
     public boolean stemm = false;
     public static BlockingQueue<Document> currChunk = new LinkedBlockingQueue<>(5000);
-    ReadFile rd ;
+    ReadFile rd;
+    public TextField queryText;
+    public String query;
+
 
     public void onStart(){
-
- /*       loadInv.setVisible(false);
-        displayInv.setVisible(false);
-        browse_Doc.setVisible(false);
-        browse_posting.setVisible(false);*/
 
         docPath = documentPath.getText();
         postingPathSaved = this.postingPath.getText();
@@ -117,6 +115,10 @@ public class Controller {
         }
     }
 
+    public void onRun() {
+
+        query = queryText.getText();
+    }
 
     public void onBrowseDoc(){ Browse(documentPath); }
 
@@ -384,16 +386,6 @@ public class Controller {
                 numOfDocs =0;
 
 
-                /*
-                allDocsInfo = new String[line1.length()]; //initailiaze
-                if (!line1.contains("|")) { //only one doc in list.
-                    numOfDocs = 1;
-                    totalShows = Integer.parseInt(line1.substring(line1.indexOf(":") + 1, line1.indexOf(";")));
-                    line1 = null; //finish
-                }
-                */
-
-
                 String[] lineChar = line1.split("\\|");
                 numOfDocs += lineChar.length;
                 for(String s : lineChar) {
@@ -405,26 +397,6 @@ public class Controller {
                         //System.out.println();
                     }
                 }
-
-                    /*
-                    allDocsInfo = line1.split(":|\\;|\\|"); //each cell is a different doc and its values
-                    numOfDocs++;
-                    totalShows = totalShows + Integer.parseInt(allDocsInfo[1]);
-                    line1 = line1.substring(line1.indexOf("|") + 1); // next docID of term and info...
-                    if (!line1.contains("|")) {
-                        numOfDocs++;
-                        allDocsInfo = line1.split(":|\\;|\\|"); //each cell is a different doc and its values
-                        try {
-                            totalShows = totalShows + Integer.parseInt(allDocsInfo[1]);
-                            break;
-                        }
-                        catch (Exception e){
-                            System.out.println();
-                        }
-
-                    }
-                    */
-
 
                 termData[0] = numOfDocs;
                 termData[1] = totalShows;

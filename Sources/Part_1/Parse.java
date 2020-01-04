@@ -26,13 +26,14 @@ public class Parse  {
 
     public static boolean stopIndexer = false;
 
-
+    private boolean isQuery;
 
 
 
     public Parse(boolean stemmer , String stopWordPath){
 
         this.iSstemmer = stemmer;
+        this.isQuery =
         df.setRoundingMode(RoundingMode.CEILING);
         setStopWord(stopWordPath);
     }
