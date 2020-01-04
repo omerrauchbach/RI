@@ -3,6 +3,7 @@ package Part_1;
 
 
 
+import Part_2.Query;
 import javafx.scene.control.Alert;
 import sun.awt.Mutex;
 
@@ -27,13 +28,13 @@ public class Parse  {
     public static boolean stopIndexer = false;
 
     private boolean isQuery;
+    LinkedList<Document> queryParse  = new LinkedList<>();
 
 
-
-    public Parse(boolean stemmer , String stopWordPath){
+    public Parse(boolean stemmer , String stopWordPath, boolean query){
 
         this.iSstemmer = stemmer;
-        this.isQuery =
+        this.isQuery = query;
         df.setRoundingMode(RoundingMode.CEILING);
         setStopWord(stopWordPath);
     }
@@ -758,6 +759,16 @@ public class Parse  {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setContentText("Error in folder path");
             alert.show();
+        }
+    }
+
+    public void parseQuery(String query) {
+
+        if (query == null) {
+            ////// DOC OF QUERIES
+        }
+        else{ //STRINGGGG , input query.
+
         }
     }
 }
