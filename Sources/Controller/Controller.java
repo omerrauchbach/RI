@@ -60,6 +60,7 @@ public class Controller {
 
     public void onStart() {
 
+
         docPath = documentPath.getText();
         postingPathSaved = this.postingPath.getText();
         stemm = this.stemming.isSelected();
