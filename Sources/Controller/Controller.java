@@ -31,7 +31,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class Controller {
 
-    public TextField documentPath;
+    public TextField documentPath ;
     public TextField postingPath;
     public Button start;
     public Button browse_Doc;
@@ -40,8 +40,8 @@ public class Controller {
     public Button displayInv;
     public Button loadInv;
     public CheckBox stemming;
-    public String docPath = "";
-    public String postingPathSaved = "";
+    public String docPath= "" ;
+    public String postingPathSaved = "" ;
     public boolean alreadyIndexedWithStemming = false;
     public boolean alreadyIndexedWithoutStemming = false;
     private boolean startsIndexing = false;
@@ -52,34 +52,34 @@ public class Controller {
     ReadFile rd;
 
     public TextField queryText;
-    public TextField QueryFilePath;
+    public TextField QueryFilePath ;
     public String query;
     public CheckBox semantics;
     public boolean isQuery = false;
 
 
-    public void onStart() {
 
+    public void onStart(){
 
         docPath = documentPath.getText();
         postingPathSaved = this.postingPath.getText();
         stemm = this.stemming.isSelected();
         String infoToDisplay = "";
 
-        if (docPath.equals("") || postingPathSaved.equals("")) {
+        if(docPath.equals("") || postingPathSaved.equals("")){
             displayError("You have to fill the two paths");
-        } else {
+        }else{
 
             if (stemm)
-                deleteFiles(postingPathSaved + "\\stemming");
+                deleteFiles(postingPathSaved+"\\stemming");
             else
-                deleteFiles(postingPathSaved + "\\nonStemming");
+                deleteFiles(postingPathSaved+"\\nonStemming");
 
 
-            rd = new ReadFile(docPath, stemm, postingPathSaved);
+            rd = new ReadFile(docPath ,stemm  ,postingPathSaved);
             try {
                 ReadFile.stopParser = false;
-                Parse.stopIndexer = false;
+                Parse.stopIndexer =false;
 
                 startTime = System.nanoTime();
                 startsIndexing = true;
@@ -89,9 +89,10 @@ public class Controller {
                     alreadyIndexedWithStemming = true;
                 else
                     alreadyIndexedWithoutStemming = true;
-            } catch (Exception e) {
+            }
+            catch(Exception e){
                 e.printStackTrace();
-            } finally {
+            }finally {
  /*               loadInv.setDisable(false);
                 displayInv.setDisable(false);
                 browse_Doc.setDisable(false);
@@ -111,30 +112,22 @@ public class Controller {
         }
     }
 
-    /*public void onRun() {
 
-        query = queryText.getText();
-    }
-*/
-    public void onBrowseDoc() {
-        Browse(documentPath);
-    }
+    public void onBrowseDoc(){ Browse(documentPath); }
 
-    public void onBrowsePosting() {
-        Browse(postingPath);
-    }
+    public void onBrowsePosting(){ Browse(postingPath); }
 
-    private void Browse(TextField text) {
+    private void Browse(TextField text){
         JButton open = new JButton();
         JFileChooser jc = new JFileChooser();
         jc.setCurrentDirectory(new File("."));
         jc.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-        if (jc.showOpenDialog(open) == JFileChooser.APPROVE_OPTION) {
+        if(jc.showOpenDialog(open) == JFileChooser.APPROVE_OPTION){
             text.setText(jc.getSelectedFile().getAbsolutePath());
         }
     }
 
-    public void onReset() {
+    public void onReset(){
 
         postingPathSaved = this.postingPath.getText();
         if (!startsIndexing && ((alreadyIndexedWithStemming || alreadyIndexedWithoutStemming) || !postingPathSaved.equals(""))) {
@@ -149,9 +142,9 @@ public class Controller {
             if (dirFiles != null) {
                 Alert alert = new Alert(Alert.AlertType.CONFIRMATION, "Are you sure you want to reset?", ButtonType.YES, ButtonType.NO, ButtonType.CANCEL);
                 alert.showAndWait();
-                if (alert.getResult() == ButtonType.YES) {
-                    deleteFiles(postingPathSaved + "\\stemming");
-                    deleteFiles(postingPathSaved + "\\nonStemming");
+                if (alert.getResult() == ButtonType.YES){
+                    deleteFiles(postingPathSaved+"\\stemming");
+                    deleteFiles(postingPathSaved+"\\nonStemming");
                 }
 
 
@@ -166,14 +159,15 @@ public class Controller {
             postingPath.clear();
             docPath = null;
             postingPath = new TextField();
-        } else {
+        }
+        else {
             Alert alert = new Alert(Alert.AlertType.ERROR);
             alert.setContentText("No data to be reset!");
             alert.show();
         }
     }
 
-    public void onDisplayInv() {
+    public void onDisplayInv(){
 
         ObservableList<Map.Entry<String, Integer>> invertedList = getObservableList();
         Stage stage = new Stage();
@@ -183,7 +177,7 @@ public class Controller {
         tokenCol.setMinWidth(200);
         tokenCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getKey()));
 
-        TableColumn<Map.Entry<String, Integer>, Integer> numCol = new TableColumn<>("total shows");
+        TableColumn<Map.Entry<String, Integer> , Integer> numCol = new TableColumn<>("total shows");
         numCol.setMinWidth(100);
         numCol.setCellValueFactory(cellData -> new SimpleIntegerProperty(cellData.getValue().getValue()).asObject());
 
@@ -206,15 +200,19 @@ public class Controller {
 
         if (postingPathSaved.equals("")) {
             displayError("You have to fill the posting path to load a dictionary!");
-        } else { //correct posting files  path.
+        }
+
+         else { //correct posting files  path.
 
             if (new File(postingPathSaved + "\\stemming").exists() && stemm) {
                 loadDicPath = postingPathSaved + "\\stemming";
                 //rd = new ReadFile(docPath, stemm, postingPathSaved);
-            } else if (new File(postingPathSaved + "\\nonStemming").exists() && !stemm) {
+            }
+            else if (new File(postingPathSaved + "\\nonStemming").exists() && !stemm) {
                 loadDicPath = postingPathSaved + "\\nonStemming";
                 //rd = new ReadFile(docPath, stemm, postingPathSaved);
-            } else {
+            }
+            else {
                 displayError("No files to load from the given path!");
                 return;
             }
@@ -235,21 +233,21 @@ public class Controller {
         }
     }
 
-    private ObservableList<Map.Entry<String, Integer>> getObservableList() {
+    private ObservableList<Map.Entry<String, Integer>> getObservableList(){
 
         ObservableList<Map.Entry<String, Integer>> invertedList = FXCollections.observableArrayList();
-        TreeMap<String, int[]> sortedList = new TreeMap<>(new Comparator<String>() {
+        TreeMap<String,int[]> sortedList = new TreeMap<>(new Comparator<String>(){
 
             @Override
             public int compare(String s1, String s2) {
                 int result = s1.compareToIgnoreCase(s2);
-                if (result == 0)
+                if( result == 0 )
                     result = s1.compareTo(s2);
                 return result;
             }
         });
         sortedList.putAll(rd.indexer.termDic);
-        for (Map.Entry<String, int[]> entry : sortedList.entrySet()) {
+        for(Map.Entry<String, int[]> entry : sortedList.entrySet()){
             Map.Entry<String, Integer> newEntry = new Map.Entry<String, Integer>() {
                 @Override
                 public String getKey() {
@@ -271,33 +269,33 @@ public class Controller {
         return invertedList;
     }
 
-    private List<String> getInvAsList() {
+    private List<String> getInvAsList(){
 
         List<String> InvList = new ArrayList<>();
-        TreeMap<String, int[]> sortedList = new TreeMap<>(new Comparator<String>() {
+        TreeMap<String,int[]> sortedList = new TreeMap<>(new Comparator<String>(){
 
             @Override
             public int compare(String s1, String s2) {
                 int result = s1.compareToIgnoreCase(s2);
-                if (result == 0)
+                if( result == 0 )
                     result = s1.compareTo(s2);
                 return result;
             }
         });
         sortedList.putAll(rd.indexer.termDic);
-        for (Map.Entry<String, int[]> entry : sortedList.entrySet()) {
+        for(Map.Entry<String, int[]> entry: sortedList.entrySet()) {
             int[] value = entry.getValue();
-            InvList.add(entry.getKey() + "," + value[0] + "," + value[1]);
+            InvList.add(entry.getKey() + "," + value[0] + "," + value[1]) ;
         }
 
         return InvList;
     }
 
-    private void deleteFiles(String pathToDelete) {
+    private void deleteFiles(String pathToDelete){
 
 
         File dir = new File(pathToDelete);
-        if (dir.exists()) {
+        if(dir.exists()) {
             File[] dirFiles = dir.listFiles();
             if (dirFiles != null) {
                 for (File fileInDir : dirFiles) {
@@ -311,26 +309,27 @@ public class Controller {
 
     public void sortByValue() throws IOException {
 
-        List<Map.Entry<String, int[]>> list =
-                new LinkedList<Map.Entry<String, int[]>>(rd.indexer.termDic.entrySet());
+        List<Map.Entry<String, int[]> > list =
+                new LinkedList<Map.Entry<String, int[]> >(rd.indexer.termDic.entrySet());
 
         // Sort the list
-        Collections.sort(list, new Comparator<Map.Entry<String, int[]>>() {
+        Collections.sort(list, new Comparator<Map.Entry<String, int[]> >() {
             public int compare(Map.Entry<String, int[]> o1,
-                               Map.Entry<String, int[]> o2) {
-                return (o2.getValue()[1]) - (o1.getValue()[1]);
+                               Map.Entry<String, int[]> o2)
+            {
+                return (o2.getValue()[1])-(o1.getValue()[1]);
             }
         });
-        FileWriter pw = new FileWriter(postingPathSaved + "\\wordsAllWords.txt", false);
+        FileWriter pw = new FileWriter(postingPathSaved+"\\wordsAllWords.txt", false);
         Iterator it = list.iterator();
         int counter = 0;
 
-        for (Map.Entry<String, int[]> entry : list) {
+        for(Map.Entry<String, int[]> entry  : list){
 
-            if (counter < 10) {
+            if(counter < 10) {
                 pw.write(entry.getKey() + "-" + entry.getValue()[1] + "\r\n");
                 counter++;
-            } else {
+            }else {
                 break;
             }
         }
@@ -338,20 +337,19 @@ public class Controller {
         System.out.println("finish!!");
 
     }
-
-    private void displayError(String error) {
+    private void displayError(String error){
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setContentText(error);
         alert.show();
     }
 
-    private void displayInfo(String info) {
+    private void displayInfo(String info){
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setContentText(info);
         alert.show();
     }
 
-    private void load(String fileNameToLoadFrom) {
+    private void load (String fileNameToLoadFrom) {
 
         String line1;
         String term;
@@ -359,7 +357,7 @@ public class Controller {
         int numOfDocs = 0;
         int[] termData = new int[2];
         String[] allDocsInfo = null;
-        String currFilePath = loadDicPath + "\\" + fileNameToLoadFrom;
+        String currFilePath = loadDicPath + "\\" + fileNameToLoadFrom ;
         try {
             Scanner scanner = new Scanner((new File(currFilePath)));
             while (scanner.hasNextLine()) {
@@ -367,26 +365,28 @@ public class Controller {
                 String test = scanner.nextLine();
                 line1 = test;
                 term = "";
-                if (line1.contains("insurer|FBHUMMENE") || line1.contains("FB3,20199,20213,23203"))
+                if(line1.contains("insurer|FBHUMMENE") || line1.contains("FB3,20199,20213,23203"))
                     continue;
                 try {
                     term = line1.substring(0, line1.indexOf("|")); // only term itself, with no other data.
-                } catch (Exception e) {
+                }
+                catch (Exception e){
                     //System.out.println();
                 }
-                line1 = line1.substring(line1.indexOf("|") + 1); //without term itself.
+                line1 = line1.substring(line1.indexOf("|")+1); //without term itself.
 
                 totalShows = 0;
-                numOfDocs = 0;
+                numOfDocs =0;
 
 
                 String[] lineChar = line1.split("\\|");
                 numOfDocs += lineChar.length;
-                for (String s : lineChar) {
+                for(String s : lineChar) {
                     String[] dot = s.split("[:;]+");
                     try {
                         totalShows += Integer.parseInt(dot[1]);
-                    } catch (Exception e) {
+                    }
+                    catch (Exception e){
                         //System.out.println();
                     }
                 }
@@ -395,22 +395,23 @@ public class Controller {
                 termData[1] = totalShows;
 
 
-                if (term.length() == 0)
+                if(term.length() == 0)
                     continue;
-                if (Character.isDigit(term.charAt(0))) {
+                if(Character.isDigit(term.charAt(0))){
 
-                    if (rd.indexer.termDic.containsKey(term)) {
+                    if(rd.indexer.termDic.containsKey(term)) {
                         int[] savedTermData;
                         savedTermData = rd.indexer.termDic.get(term);
                         int[] updateTermInfo = new int[3];
                         updateTermInfo[0] = savedTermData[0] + termData[0]; // adds 1 to curr # of docs
                         updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
                         rd.indexer.termDic.replace(term, updateTermInfo);
-                    } else {
-                        rd.indexer.termDic.put(term, termData);
+                    }else{
+                        rd.indexer.termDic.put(term,termData);
                     }
 
-                } else if (rd.indexer.termDic.containsKey(term)) {
+                }
+                else if(rd.indexer.termDic.containsKey(term)){
                     int[] savedTermData;
                     savedTermData = rd.indexer.termDic.get(term);
                     int[] updateTermInfo = new int[3];
@@ -418,13 +419,15 @@ public class Controller {
                     updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
                     rd.indexer.termDic.replace(term, updateTermInfo);
 
-                } else if (rd.indexer.termDic.containsKey(term.toUpperCase())) {
+                }
+                else if(rd.indexer.termDic.containsKey(term.toUpperCase()))
+                {
                     int[] savedTermData = rd.indexer.termDic.get(term.toUpperCase());
                     int[] updateTermInfo = new int[3];
                     updateTermInfo[0] = savedTermData[0] + termData[0]; // adds 1 to curr # of docs
                     updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
                     rd.indexer.termDic.replace(term, updateTermInfo);
-                } else if (rd.indexer.termDic.containsKey(term.toLowerCase())) {
+                }else if( rd.indexer.termDic.containsKey(term.toLowerCase())){
 
                     int[] savedTermData = rd.indexer.termDic.get(term.toLowerCase());
                     int[] updateTermInfo = new int[3];
@@ -432,8 +435,8 @@ public class Controller {
                     updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
                     rd.indexer.termDic.replace(term.toLowerCase(), updateTermInfo);
 
-                } else {
-                    rd.indexer.termDic.put(term, termData);
+                }else{
+                    rd.indexer.termDic.put(term,termData);
                 }
             }
 
@@ -442,10 +445,11 @@ public class Controller {
 
         }
     }
-
     private boolean alreadyIndexedAll() {
         return alreadyIndexedWithStemming && alreadyIndexedWithoutStemming;
     }
+
+
 
 
     private void onRun() {
@@ -453,7 +457,6 @@ public class Controller {
         String query = queryText.getText();
         String path = QueryFilePath.getText();
         Searcher searcher;
-
         if (query != null) //only input.
             searcher = new Searcher(query, null, null, semantics.isSelected());
         else
@@ -468,10 +471,8 @@ public class Controller {
 ////        }
 
 
-            searcher.processQuery(); //updates the relevant docs for queryyyy
+        searcher.processQuery(); //updates the relevant docs for queryyyy
     }
-
-
 
     public void onBrowseQuery() { Browse(QueryFilePath); }
 

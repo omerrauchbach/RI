@@ -27,7 +27,7 @@ public class Searcher implements Runnable {
     private StringBuilder allLinesInQueries;
     private Mutex lockAddToAfterParse = new Mutex();
     public HashMap<String, String[]> queriesToSearchAndRank;
-
+    private String queryFilePath;
 
     //private Indexer indexer;
 
@@ -38,6 +38,7 @@ public class Searcher implements Runnable {
         this.semantics = semantics;
         this.queryFilePath = queryFilePath;
         indexQuery = 1;
+        this.queryFilePath = queryFilePath;
         queriesToSearchAndRank =new LinkedHashMap<>();
         //indexer = Indexer.
     }
