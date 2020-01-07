@@ -16,6 +16,7 @@ public class Searcher implements Runnable {
     private String queryText;
     private Query query;
     private String stopWordsPath;
+    private String queryFilePath;
     private boolean semantics;
     private Queue<String> relevantDocs;
     public Queue<Document> querySet;
@@ -30,11 +31,12 @@ public class Searcher implements Runnable {
 
     //private Indexer indexer;
 
-    public Searcher(String query, String stopWordsPath, boolean semantics) {
+    public Searcher(String query, String stopWordsPath, String queryFilePath, boolean semantics) {
         this.parse = new Parse(false, stopWordsPath, true);
         this.queryText = query;
         this.stopWordsPath = stopWordsPath;
         this.semantics = semantics;
+        this.queryFilePath = queryFilePath;
         indexQuery = 1;
         queriesToSearchAndRank =new LinkedHashMap<>();
         //indexer = Indexer.
