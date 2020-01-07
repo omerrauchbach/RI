@@ -453,6 +453,7 @@ public class Controller {
         String query = queryText.getText();
         String path = QueryFilePath.getText();
         Searcher searcher;
+
         if (query != null) //only input.
             searcher = new Searcher(query, null, null, semantics.isSelected());
         else
@@ -465,6 +466,7 @@ public class Controller {
 ////        } catch (InterruptedException e) {
 ////            e.printStackTrace();
 ////        }
+
 
             searcher.processQuery(); //updates the relevant docs for queryyyy
     }
