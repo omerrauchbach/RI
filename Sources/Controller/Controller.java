@@ -112,10 +112,6 @@ public class Controller {
         }
     }
 
-    public void onRun() {
-
-        query = queryText.getText();
-    }
 
     public void onBrowseDoc(){ Browse(documentPath); }
 
@@ -454,16 +450,27 @@ public class Controller {
     }
 
 
-    private void onRun(String query) {
-        isQuery = true;
-        Searcher searcher = new Searcher(query, null, semantics.isSelected());
-        Thread runQueryThread = new Thread(searcher);
-        runQueryThread.start();
-        try {
-            runQueryThread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+
+
+    private void onRun() {
+        //isQuery = true;
+        String query = queryText.getText();
+        String path = QueryFilePath.getText();
+        Searcher searcher;
+        if (query != null) //only input.
+            searcher = new Searcher(query, null, null, semantics.isSelected());
+        else
+            searcher = new Searcher(null, null, path, semantics.isSelected());
+
+//        Thread runQueryThread = new Thread(searcher);
+////        runQueryThread.start();
+////        try {
+////            runQueryThread.join();
+////        } catch (InterruptedException e) {
+////            e.printStackTrace();
+////        }
+
+
         searcher.processQuery(); //updates the relevant docs for queryyyy
     }
 
