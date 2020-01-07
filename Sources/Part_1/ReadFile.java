@@ -1,5 +1,6 @@
 package Part_1;
 
+import Controller.Controller;
 import javafx.scene.control.Alert;
 import sun.awt.Mutex;
 
@@ -41,7 +42,7 @@ public class ReadFile extends Thread {
      */
     public ReadFile(String pathDir , boolean stemm , String postingPathSaved ) {
 
-        this.parse = new Parse(stemm,pathDir);
+        this.parse = new Parse(stemm,pathDir, false);
         this.indexer = new Indexer(stemm , postingPathSaved);
         this.pathDir = pathDir;
 

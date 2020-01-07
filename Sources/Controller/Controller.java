@@ -55,6 +55,8 @@ public class Controller {
     public TextField QueryFilePath ;
     public String query;
     public CheckBox semantics;
+    public boolean isQuery = false;
+
 
 
     public void onStart(){
@@ -453,6 +455,7 @@ public class Controller {
 
 
     private void onRun(String query) {
+        isQuery = true;
         Searcher searcher = new Searcher(query, null, semantics.isSelected());
         Thread runQueryThread = new Thread(searcher);
         runQueryThread.start();
