@@ -11,8 +11,8 @@ import java.util.concurrent.*;
 
 public class Indexer{
 
-    public  HashMap<String, int[]> allDocuments = new HashMap<>(); // 0 - maxTF, 1- #uniqueTerms, 2- length of doc
-    public  HashMap<String , int[]> termDic = new HashMap<>();// 0 - #docs, 1- #showsTotal, 2- line in posting
+    public  static HashMap<String, int[]> allDocuments = new HashMap<>(); // 0 - maxTF, 1- #uniqueTerms, 2- length of doc
+    public static  HashMap<String , int[]> termDic = new HashMap<>();// 0 - #docs, 1- #showsTotal, 2- line in posting
     public static   String filePath ; //get it from parse. !
     HashMap<String, int[]> littleDic = new HashMap<>() ;
     HashMap<String, String> ChunkTermDicDocs = new HashMap<>();
