@@ -8,6 +8,7 @@ import sun.awt.Mutex;
 
 
 import java.io.*;
+import java.net.URL;
 import java.util.*;
 
 public class Searcher implements Runnable {
@@ -27,7 +28,7 @@ public class Searcher implements Runnable {
     private StringBuilder allLinesInQueries;
     private Mutex lockAddToAfterParse = new Mutex();
     public HashMap<String, String[]> queriesToSearchAndRank;
-    private String queryFilePath;
+    //private String queryFilePath;
 
     //private Indexer indexer;
 
@@ -50,17 +51,23 @@ public class Searcher implements Runnable {
         Document doc;
         querySet = new LinkedList<>();
 
+
         if (queryText != null) { //only string. inputtt
+
+            if(semantics)
+                queryText = addSemanticWords(queryText);
+
             queryTextSplit = queryText.split(" ");
             StringBuilder queryToProcess = new StringBuilder();
             int i = 0;
             while (i < queryTextSplit.length) {
-                queryTextSplit[i] = removeDelimiters(queryTextSplit[i]);
+                //queryTextSplit[i] = removeDelimiters(queryTextSplit[i]);
                 queryTextSplit[i] = queryTextSplit[i].toLowerCase();
                 queryToProcess.append(" ").append(queryTextSplit[i]); //adds to SB
                 i++;
             }
             queryText = queryToProcess.toString(); //after all removals
+            queryText = queryText.substring(1); //remove first extra blank.
             query = new Query(queryText);
             //createQueryDoc();
             doc = new Document();
@@ -71,7 +78,7 @@ public class Searcher implements Runnable {
             querySet.clear();
             queryAfterParse = parse.parseDocs(newList);
 
-            doc = queryAfterParse.getFirst(); //only one document in this return list.
+            doc = queryAfterParse.poll(); //only one document in this return list.
             String[] toRank = prepareToRank(doc); //prepare String[] of query words to rank.
 
             queriesToSearchAndRank.put("query" + indexQuery, toRank);
@@ -106,8 +113,9 @@ public class Searcher implements Runnable {
 
     private String[] prepareToRank(Document doc) {
         if (doc != null) {
-            String[] allTermsInQuery = new String[doc.getLength()];
-            String allText = doc.getText();
+            String[] allTermsInQuery;
+            String allText = doc.getTermDicAsString();
+            allText = allText.substring(1);
             allTermsInQuery = allText.split(" ");
             return allTermsInQuery;
         }
@@ -203,7 +211,82 @@ public class Searcher implements Runnable {
         
     }
 
+    public void test(){
+        processQuery();
+    }
+
     public Queue<String> getRelevantDocs() {
         return relevantDocs;
+    }
+
+    private String addSemantics(String queryTerms) {
+        String[] querySplitted = queryTerms.split(" ");
+        StringBuilder semanticQuery = new StringBuilder();
+        int i = 0;
+        while (i < querySplitted.length) {
+            querySplitted[i] = removeDelimiters(querySplitted[i]);
+            String result = addSemanticWords(querySplitted[i]);
+
+            if (result != null && !result.equals(""))
+                semanticQuery.append(result); //2 more words.
+            else
+                semanticQuery.append(querySplitted[i]); //word itself. no changes.
+            i++;
+        }
+        return querySplitted.toString();
+    }
+
+    public String addSemanticWords(String terms) {
+
+        StringBuilder allWords = new StringBuilder();
+        allWords.append(terms); //word itself.
+        URL address;
+
+        String[] termsSplit = terms.split(" "); //if it's more than 1 word.
+        String toCheck = "";
+        for (int i = 0; i < termsSplit.length; i++) {
+            if (i != termsSplit.length - 1)
+                toCheck = toCheck + termsSplit[i] + "+";
+            else //last word.
+                toCheck = toCheck + termsSplit[i];
+        }
+        try {
+            address = new URL("https://api.datamuse.com/words?ml=" + toCheck);
+            StringBuilder sb = new StringBuilder("{\"result\":");
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(address.openStream()));
+            String inputLine;
+            while ((inputLine = in.readLine()) != null)
+                sb.append(inputLine);
+            in.close();
+
+            String allSynonyms = sb.toString();
+            allSynonyms = allSynonyms.replaceAll(":|\\,|\\[|\\]|\\{|\\}"," ");
+            allSynonyms = allSynonyms.replaceAll("\"", "");
+            allSynonyms = allSynonyms.replaceAll("  ", " ");
+
+            String toReturn = "";
+            String[] toChoose = allSynonyms.split(" ");
+
+            int startInd = allSynonyms.indexOf("word")+1;
+            int only3words = 0;
+
+                for (int i = 0; i < toChoose.length; i++) {
+                    if (toChoose[i].equals("word")) {
+                        toReturn = toReturn + " " + toChoose[i + 1];
+                        allSynonyms = allSynonyms.substring(allSynonyms.indexOf("word") + 4);
+                        toChoose = allSynonyms.split(" "); //again
+                        only3words++;
+                        i=0;
+                        if (only3words == 3)
+                            break;
+                    }
+                }
+
+            return toReturn;
+
+        } catch (IOException e) {
+            return null;
+        }
     }
 }
