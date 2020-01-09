@@ -1,6 +1,7 @@
 package Part_1;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -41,6 +42,23 @@ public class Document {
 
     public String getId() {
         return id;
+    }
+
+    public String getTermDicAsString() {
+
+        String ans = "";
+        //String[] stringArrayReturn = new String[termDic.size()];
+        //Set<String> toReturn = termDic.keySet();
+
+        for (String key : termDic.keySet())
+            ans = ans + " " + key;
+
+       // stringArrayReturn = (String[])toReturn.toArray();
+
+ /*       for(int i=0; i<termDic.size(); i++)
+            stringArrayReturn[i] = toReturn.*/
+
+        return ans;
     }
 
     public void setTitle(String title) {
