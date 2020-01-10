@@ -18,10 +18,7 @@ import javafx.stage.Stage;
 
 
 import javax.swing.*;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -56,6 +53,9 @@ public class Controller {
     public String query;
     public CheckBox semantics;
     public boolean isQuery = false;
+    public static HashMap<String, Integer> allDocsLengthes = new HashMap<>();
+    StringBuilder allLinesInDoc;
+
 
 
 
@@ -452,26 +452,115 @@ public class Controller {
 
 
 
-    private void onRun() {
+    public void onRun() {
         //isQuery = true;
+        postingPathSaved = this.postingPath.getText(); //posing directories and stop words locationnn!
+
         String query = queryText.getText();
         String path = QueryFilePath.getText();
         Searcher searcher;
-        if (query != null) //only input.
-            searcher = new Searcher(query, null, null, semantics.isSelected());
+        if (query != null) //an input query text.
+            searcher = new Searcher(query, postingPathSaved, null, semantics.isSelected());
         else
-            searcher = new Searcher(null, null, path, semantics.isSelected());
+            searcher = new Searcher(null, postingPathSaved, path, semantics.isSelected());
 
-//        Thread runQueryThread = new Thread(searcher);
-////        runQueryThread.start();
-////        try {
-////            runQueryThread.join();
-////        } catch (InterruptedException e) {
-////            e.printStackTrace();
-////        }
-
-
+        getAllLengthes();
         searcher.processQuery(); //updates the relevant docs for queryyyy
+    }
+
+    public void getAllLengthes() {
+
+        //File rootDirectory = new File(documentPath + "\\corpus");
+        File rootDirectory = new File("C:\\Users\\Tali\\IdeaProjects\\SearchEngine\\Resources\\corpus"); ///testttt
+
+        File[] allDirectory = rootDirectory.listFiles();
+        String[] allTextSplitted;
+        int currLength = 0;
+
+        if (allDirectory != null) {
+            allLinesInDoc = new StringBuilder();
+            for (File file : allDirectory) {
+                File[] current = file.listFiles(); // gets the file itself, inside the corpus directory
+                if (null != current) {
+                    for (File txtfile : current) {
+                        try {
+                            BufferedReader myBufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(txtfile)));
+                            for (String currLine; (currLine = myBufferedReader.readLine()) != null; )
+                                allLinesInDoc.append(currLine + System.lineSeparator());
+
+                            int startInd = allLinesInDoc.indexOf("<DOC>");
+
+                            while (startInd != -1) {
+
+                                String text;
+                                String id = "";
+                                Document newDoc = new Document();
+                                int endInd = allLinesInDoc.indexOf("</DOC>", startInd); //searches for "</DOC>" from starts index
+                                String currDoc = allLinesInDoc.substring(startInd, endInd);
+
+                                //set Id <DOCNO>, </DOCNO>"
+                                int startIndexId = currDoc.indexOf("<DOCNO>");
+                                int endIndexId = currDoc.indexOf("</DOCNO>");
+                                if (startIndexId == -1 || endIndexId == -1)
+                                    newDoc.setId("");
+                                else {
+                                    id = currDoc.substring(startIndexId + 7, endIndexId).trim();
+                                    newDoc.setId(id);
+                                }
+
+                                // gets the document's <TEXT></TEXT> tags
+                                if (currDoc.contains("<TEXT>")) {
+                                    int startOfText;
+                                    int addStart = 6;
+                                    if (currDoc.contains("<F P=106>") || currDoc.contains("<F P=105>")) {
+                                        startOfText = currDoc.indexOf("[Text]");
+                                        if (currDoc.contains("[Excerpt]")) {
+                                            startOfText = currDoc.indexOf("[Excerpt]");
+                                            addStart = 9;
+                                        } else if (currDoc.contains("[Excerpts]")) {
+                                            startOfText = currDoc.indexOf("[Excerpts]");
+                                            addStart = 10;
+                                        }
+
+                                    } else
+                                        startOfText = currDoc.indexOf("<TEXT>");
+                                    int endOfText = currDoc.indexOf("</TEXT>");
+
+                                    String docText = currDoc.substring(startOfText + addStart, endOfText).trim();
+                                    //docText = docText.replaceAll(" ", "");
+                                    docText = docText.replaceAll("\r\n", " ");
+                                    docText = docText.replaceAll("   ", " ");
+                                    docText = docText.replaceAll("  ", " ");
+                                    docText = docText.replaceAll("  ", " ");
+
+                                    allTextSplitted = docText.split(" ");
+                                    currLength = allTextSplitted.length;
+
+                                    allDocsLengthes.put(id, currLength);
+                                    startInd = allLinesInDoc.indexOf("<DOC>", endInd); //continues to the next doc in file
+
+                                    //allLinesInDoc = new StringBuilder();
+                                }
+                            }
+
+
+                            myBufferedReader.close();
+                            allLinesInDoc = new StringBuilder();
+
+                        } catch(IOException e){
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+
+            System.out.println(allDocsLengthes.size());
+        }
+        else{
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Error in folder path");
+            alert.show();
+        }
     }
 
     public void onBrowseQuery() { Browse(QueryFilePath); }
