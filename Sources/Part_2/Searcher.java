@@ -24,23 +24,24 @@ public class Searcher implements Runnable {
     public LinkedList<Document> queryAfterParse = new LinkedList<>();
     int indexQuery;
     private Parse parse;
-    private String queryPath;
     private StringBuilder allLinesInQueries;
     private Mutex lockAddToAfterParse = new Mutex();
     public HashMap<String, String[]> queriesToSearchAndRank;
-    //private String queryFilePath;
+    private LinkedList<LinkedList<String>> relevantDocsForAll;
+
 
     //private Indexer indexer;
 
     public Searcher(String query, String stopWordsPath, String queryFilePath, boolean semantics) {
         this.parse = new Parse(false, stopWordsPath, true);
         this.queryText = query;
-        this.stopWordsPath = stopWordsPath;
+        this.stopWordsPath = stopWordsPath + "stop_words.txt";
         this.semantics = semantics;
         this.queryFilePath = queryFilePath;
         indexQuery = 1;
         this.queryFilePath = queryFilePath;
-        queriesToSearchAndRank =new LinkedHashMap<>();
+        queriesToSearchAndRank = new LinkedHashMap<>();
+        relevantDocsForAll = new LinkedList<>();
         //indexer = Indexer.
     }
 
@@ -55,7 +56,7 @@ public class Searcher implements Runnable {
         if (queryText != null) { //only string. inputtt
 
             if(semantics)
-                queryText = addSemanticWords(queryText);
+                queryText = queryText + " " + addSemanticWords(queryText);
 
             queryTextSplit = queryText.split(" ");
             StringBuilder queryToProcess = new StringBuilder();
@@ -84,7 +85,7 @@ public class Searcher implements Runnable {
             queriesToSearchAndRank.put("query" + indexQuery, toRank);
         }
 
-        else { // queries text file !! ????????????????????????
+        else { // queries text file !!
             query = new Query("");
             readQueryFile();
             Document currQuery = new Document();
@@ -97,7 +98,7 @@ public class Searcher implements Runnable {
             }
         }
 
-        Ranker ranker = new Ranker();
+        Ranker ranker = new Ranker(null); ////////////////// ????????????????????
 
   /*      // puts all the query terms into an array for rank
         HashMap<String, int[]> queryDic = query.getQueryTermDic();
@@ -108,7 +109,7 @@ public class Searcher implements Runnable {
             i++;
         }*/
 
-        relevantDocs = ranker.rank(queriesToSearchAndRank);
+        relevantDocsForAll = ranker.rankAllQueries(queriesToSearchAndRank);
     }
 
     private String[] prepareToRank(Document doc) {
@@ -124,7 +125,7 @@ public class Searcher implements Runnable {
 
     private void readQueryFile() {
 
-        File queriesFile = new File(queryPath);
+        File queriesFile = new File(queryFilePath);
         //System.out.println("ReadFile");
         if (queriesFile != null) {
             allLinesInQueries = new StringBuilder();
@@ -136,23 +137,36 @@ public class Searcher implements Runnable {
                 //createDoc();
                 String text;
                 String idQuery;
+                int idQueryyy;
+                String restOfQueries = allLinesInQueries.toString();
                 //String id = allLinesInQueries.substring(allLinesInQueries.indexOf("<num>") + 2, endIndexId).trim();
                 int startInd = allLinesInQueries.indexOf("<title>");
+                Document[] allQueries = new Document[30];
+                int numOfQueries = 0;
+
                 while (startInd != -1) {
-                    idQuery = String.valueOf(allLinesInQueries.indexOf("<num>")+2); //Query number ID
-                    int endInd = allLinesInQueries.indexOf("<desc>", startInd); //searches for "<desc>" from starts index
-                    String currQuery = allLinesInQueries.substring(startInd+1, endInd); //query itself.
+                    numOfQueries++;
+                    idQueryyy = restOfQueries.indexOf(":")+2; //index!!! of Query number ID
+                    idQuery = restOfQueries.substring(idQueryyy, restOfQueries.indexOf("<title>")-2); //number itself.
+                    int endInd = restOfQueries.indexOf("<desc>", startInd)-5; //searches for "<desc>" from starts index
+                    String currQuery = restOfQueries.substring(startInd+8, endInd); //query itself.
+
+                    int endQuery = restOfQueries.indexOf("</top>", endInd);
+                    restOfQueries = restOfQueries.substring(endQuery);
 
                     //set Id Query <num>"
-                    Document newQueryDoc = new Document();
-                    newQueryDoc.setId(idQuery);
-                    newQueryDoc.setText(currQuery);
-                    querySet.add(newQueryDoc);
+                    if (semantics)
+                        currQuery = currQuery + " " + addSemanticWords(currQuery);
 
-                    startInd = allLinesInQueries.indexOf("<title>", endInd); //continues to the next doc in file
+                    allQueries[numOfQueries] = new Document();
+                    allQueries[numOfQueries].setId(idQuery);
+                    allQueries[numOfQueries].setText(currQuery);
+                    querySet.add(allQueries[numOfQueries]);
+
+                    startInd = restOfQueries.indexOf("<title>"); //continues to the next doc in file
                 }
 
-                allLinesInQueries = new StringBuilder(); //initialize
+                //allLinesInQueries = new StringBuilder(); //initialize
                 myBufferedReader.close();
 
                 LinkedList newList = new LinkedList(querySet);
@@ -268,7 +282,7 @@ public class Searcher implements Runnable {
             String toReturn = "";
             String[] toChoose = allSynonyms.split(" ");
 
-            int startInd = allSynonyms.indexOf("word")+1;
+            int startInd = allSynonyms.indexOf("word")+5;
             int only3words = 0;
 
                 for (int i = 0; i < toChoose.length; i++) {

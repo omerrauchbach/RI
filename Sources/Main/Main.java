@@ -1,11 +1,13 @@
 package Main;
 
 
+import Controller.Controller;
 import Part_1.Indexer;
 import Part_1.Parse;
 import Part_1.ReadFile;
 import Part_1.Document;
 import Part_1.Writer;
+import Part_2.Searcher;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -21,15 +23,29 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
-public class Main extends Application {
+public class Main { //extends Application {
 
    // Indexer indexer = new Indexer(false, null);
+    //public Searcher se;
+
 
     public static void main(String[] args) {
 
+        //Searcher se = new Searcher(null, null, "C:\\Users\\Tali\\Desktop\\allQueries.txt", true);
+        //Searcher se = new Searcher("blood-alcohol fatalities", null, "C:\\Users\\Tali\\Desktop\\allQueries.txt", true);
+        //se.processQuery();
+
+        Controller c = new Controller();
+        c.getAllLengthes();
+        //se.addSemanticWords("boat water love");
+        //test();
         //onlyNumbers();
-        launch(args);
+        //launch(args);
+        //se.processQuery();
     }
+
+   /* public void test(){
+    }*/
 
 //    public void onlyNumbers() throws IOException {
 //        Iterator it = indexer.termDic.entrySet().iterator();
@@ -44,13 +60,13 @@ public class Main extends Application {
 //        System.out.println(counter);
 //    }
 
-    @Override
+  /*  @Override
     public void start(Stage primaryStage) throws Exception {
 
         Parent mainWindow = FXMLLoader.load(getClass().getResource("/Main.fxml"));
         primaryStage.setScene(new Scene(mainWindow , 600, 400));
         primaryStage.show();
-    }
+    }*/
 }
 
 /*
