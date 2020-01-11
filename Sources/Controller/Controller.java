@@ -553,8 +553,8 @@ public class Controller {
                                     allDocsLengthes.put(id, currLength);
                                     startInd = allLinesInDoc.indexOf("<DOC>", endInd); //continues to the next doc in file
 
-                                    numOfDocs++;
-                                    System.out.println("num of docs : " + numOfDocs);
+                                    //numOfDocs++;
+                                    //System.out.println("num of docs : " + numOfDocs);
                                 }
 
                                 else{ //there's no text in doc :( so I made it up.
@@ -573,12 +573,10 @@ public class Controller {
                         }
                     }
                 }
-                numOfFiles++;
-
-                System.out.println("num of directoriesss : " + numOfFiles);
+                //numOfFiles++;
+                //System.out.println("num of directoriesss : " + numOfFiles);
             }
-
-            System.out.println(allDocsLengthes.size());
+            //System.out.println(allDocsLengthes.size());
         }
         else{
             Alert alert = new Alert(Alert.AlertType.ERROR);
