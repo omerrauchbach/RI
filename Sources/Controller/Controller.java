@@ -46,7 +46,7 @@ public class Controller {
     public String loadDicPath;
     public boolean stemm = false;
     public static BlockingQueue<Document> currChunk = new LinkedBlockingQueue<>(5000);
-    ReadFile rd;
+    private ReadFile rd;
 
     public TextField queryText;
     public TextField QueryFilePath ;
@@ -54,7 +54,7 @@ public class Controller {
     public CheckBox semantics;
     public boolean isQuery = false;
     public static HashMap<String, Integer> allDocsLengthes = new HashMap<>();
-    StringBuilder allLinesInDoc;
+    private StringBuilder allLinesInDoc;
 
 
 
@@ -470,12 +470,17 @@ public class Controller {
 
     public void getAllLengthes() {
 
+        int numOfFiles = 0;
+        int numOfDocs = 0;
+
         //File rootDirectory = new File(documentPath + "\\corpus");
         File rootDirectory = new File("C:\\Users\\Tali\\IdeaProjects\\SearchEngine\\Resources\\corpus"); ///testttt
 
         File[] allDirectory = rootDirectory.listFiles();
         String[] allTextSplitted;
         int currLength = 0;
+        boolean skipEnd = false;
+        int endOfText = 0;
 
         if (allDirectory != null) {
             allLinesInDoc = new StringBuilder();
@@ -509,10 +514,10 @@ public class Controller {
                                 }
 
                                 // gets the document's <TEXT></TEXT> tags
-                                if (currDoc.contains("<TEXT>")) {
+                                if (currDoc.contains("<TEXT>") || currDoc.contains("-TEGC")) {
                                     int startOfText;
                                     int addStart = 6;
-                                    if (currDoc.contains("<F P=106>") || currDoc.contains("<F P=105>")) {
+                                    if (currDoc.contains("<F P=106>") || currDoc.contains("<F P=105>") || currDoc.contains("FT924-11838")) {
                                         startOfText = currDoc.indexOf("[Text]");
                                         if (currDoc.contains("[Excerpt]")) {
                                             startOfText = currDoc.indexOf("[Excerpt]");
@@ -520,13 +525,22 @@ public class Controller {
                                         } else if (currDoc.contains("[Excerpts]")) {
                                             startOfText = currDoc.indexOf("[Excerpts]");
                                             addStart = 10;
+                                        } else if (currDoc.contains("FT924-11838")) {
+                                            startOfText = currDoc.indexOf("-TEGC");
+                                            addStart = 5;
+                                            skipEnd = true;
+                                            endOfText = currDoc.indexOf("</DATELINE>");
                                         }
 
                                     } else
                                         startOfText = currDoc.indexOf("<TEXT>");
-                                    int endOfText = currDoc.indexOf("</TEXT>");
 
+                                    if (!skipEnd)
+                                        endOfText = currDoc.indexOf("</TEXT>");
+
+                                    skipEnd = false;
                                     String docText = currDoc.substring(startOfText + addStart, endOfText).trim();
+
                                     //docText = docText.replaceAll(" ", "");
                                     docText = docText.replaceAll("\r\n", " ");
                                     docText = docText.replaceAll("   ", " ");
@@ -539,10 +553,17 @@ public class Controller {
                                     allDocsLengthes.put(id, currLength);
                                     startInd = allLinesInDoc.indexOf("<DOC>", endInd); //continues to the next doc in file
 
-                                    //allLinesInDoc = new StringBuilder();
+                                    numOfDocs++;
+                                    System.out.println("num of docs : " + numOfDocs);
+                                }
+
+                                else{ //there's no text in doc :( so I made it up.
+                                    allDocsLengthes.put(id, 10);
+                                    endInd = allLinesInDoc.indexOf("</DOC>", endInd);
+                                    startInd = allLinesInDoc.indexOf("<DOC>", endInd); //continues to the next doc in file
+                                    numOfDocs++;
                                 }
                             }
-
 
                             myBufferedReader.close();
                             allLinesInDoc = new StringBuilder();
@@ -552,6 +573,9 @@ public class Controller {
                         }
                     }
                 }
+                numOfFiles++;
+
+                System.out.println("num of directoriesss : " + numOfFiles);
             }
 
             System.out.println(allDocsLengthes.size());
