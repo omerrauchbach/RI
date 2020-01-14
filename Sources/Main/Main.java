@@ -23,7 +23,7 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
-public class Main { //extends Application {
+public class Main extends Application {
 
    // Indexer indexer = new Indexer(false, null);
     //public Searcher se;
@@ -34,13 +34,17 @@ public class Main { //extends Application {
         //Searcher se = new Searcher(null, null, "C:\\Users\\Tali\\Desktop\\allQueries.txt", true);
         //Searcher se = new Searcher("blood-alcohol fatalities", null, "C:\\Users\\Tali\\Desktop\\allQueries.txt", true);
         //se.processQuery();
+        //String res = se.addSemanticWordsOffline("boat");
+        //String res = se.addSemantics("boat. water/ love_ ");
+        //System.out.println(res);
 
-        Controller c = new Controller();
-        c.getAllLengthes();
+        //Controller c = new Controller();
+        //c.writeAllLengthes();
+        //System.out.println(c.allDocsLengthes.get("FBIS3-516"));
         //se.addSemanticWords("boat water love");
         //test();
         //onlyNumbers();
-        //launch(args);
+        launch(args);
         //se.processQuery();
     }
 
@@ -60,13 +64,13 @@ public class Main { //extends Application {
 //        System.out.println(counter);
 //    }
 
-  /*  @Override
+    @Override
     public void start(Stage primaryStage) throws Exception {
 
         Parent mainWindow = FXMLLoader.load(getClass().getResource("/Main.fxml"));
         primaryStage.setScene(new Scene(mainWindow , 600, 400));
         primaryStage.show();
-    }*/
+    }
 }
 
 /*

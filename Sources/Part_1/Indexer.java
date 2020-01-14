@@ -11,15 +11,18 @@ import java.util.concurrent.*;
 
 public class Indexer{
 
-    public  static HashMap<String, int[]> allDocuments = new HashMap<>(); // 0 - maxTF, 1- #uniqueTerms, 2- length of doc
-    public static  HashMap<String , int[]> termDic = new HashMap<>();// 0 - #docs, 1- #showsTotal, 2- line in posting
+    public static HashMap<String, String> allDocuments = new HashMap<>(); // 0 - maxTF, 1- #uniqueTerms, 2- length of doc
+    public static HashMap<String , int[]> termDic = new HashMap<>();// 0 - #docs, 1- #showsTotal, 2- line in posting
+    public  HashMap<String , String> entity = new HashMap<>();
     public static   String filePath ; //get it from parse. !
     HashMap<String, int[]> littleDic = new HashMap<>() ;
     HashMap<String, String> ChunkTermDicDocs = new HashMap<>();
-    ExecutorService poolIndexer =  Executors.newFixedThreadPool(500);
+    ExecutorService poolIndexer =  Executors.newFixedThreadPool(5);
     Writer wr  ;
     private int indexIndexer = 0;
-    Mutex chuncklock = new Mutex();
+    private Mutex chuncklock = new Mutex();
+    private Mutex docMutex = new Mutex();
+
 
 
     public Indexer(boolean stemming ,String postingPath ){
@@ -41,13 +44,20 @@ public class Indexer{
         while (!listDoc.isEmpty()) {
 
             Document currDoc = listDoc.poll();
+            if(!currDoc.title.equals(""))
+                System.out.println("stop");
             int[] docInfo = new int[3];
+            if(currDoc.getId().equals("FBIS3-175") ||currDoc.getId().equals("FBIS3-193") )
+                System.out.println(currDoc.getId()+"indexer");
 
             /////handle tmpDicDoc /////////////
             docInfo[0] = currDoc.getTfMax();
             docInfo[1] = currDoc.uniqueTerm(); //how many unique terms.
             docInfo[2] = currDoc.getLength();
-            allDocuments.put(currDoc.getId(), docInfo); //adds current doc to docs dic.
+            docMutex.lock();
+            allDocuments.put(currDoc.getId(),docInfo[0]+","+docInfo[1]+","+docInfo[2]); //adds current doc to docs dic.
+            docMutex.unlock();
+            updateEntity(currDoc);
 
             for (Map.Entry<String, int[]> entry : currDoc.termDic.entrySet()) {
 
@@ -66,11 +76,12 @@ public class Indexer{
                     updateTermInfo[0] = savedTermData[0] + 1; // adds 1 to curr # of docs
                     updateTermInfo[1] = savedTermData[1] + currTermInfo[0]; //#shows total == adds num of appearences in specific doc. !!!
                     littleDic.replace(key, updateTermInfo); //replaces values in little dic
-
-                    allInfoOfTermForPosting = ChunkTermDicDocs.get(key) + "|" + currDoc.getId() + ":" + currTermInfo[0] + ";" + currDoc.getPlaces(key);
-                    chuncklock.lock();
+                    // 0-# of show in doc /// 1 - is in the 12% /// 2 - is in the title
+                    allInfoOfTermForPosting = ChunkTermDicDocs.get(key) + "|" + currDoc.getId() + ":" + currTermInfo[0]
+                            + ";" + currTermInfo[1]+";" + currTermInfo[2];
+                    //chuncklock.lock();
                     ChunkTermDicDocs.replace(key, allInfoOfTermForPosting); // updates info for posting.
-                    chuncklock.unlock();
+                    //chuncklock.unlock();
 
                 } else { //first time of this term in chunk.
 
@@ -80,10 +91,10 @@ public class Indexer{
                     littleDic.put(key, termInfo); //first doc in list, for posting!
                     indexIndexer++;
 
-                    allInfoOfTermForPosting = currDoc.getId() + ":" + termInfo[1] + ";" + currDoc.getPlaces(key);
-                    chuncklock.lock();
+                    allInfoOfTermForPosting = currDoc.getId() + ":" + termInfo[1] + ";" + currTermInfo[1]+";" + currTermInfo[2];
+                    //chuncklock.lock();
                     ChunkTermDicDocs.put(key, allInfoOfTermForPosting); //info for posting.
-                    chuncklock.unlock();
+                    //chuncklock.unlock();
 
                     if(indexIndexer % 5000 == 0){
 
@@ -106,7 +117,62 @@ public class Indexer{
                     }
                 }
             }
+            //System.out.println("Chunk dic size:::: " + littleDic.size());
         }
+    }
+
+
+    private void updateEntity(Document doc){
+
+
+        for(Map.Entry<String,Integer> entry: doc.entitys.entrySet()){
+
+            String entity= entry.getKey();
+            int value = entry.getValue();
+            if(this.entity.containsKey(entity)){
+                this.entity.replace(entity,this.entity.get(entity)+"|"+doc.getId()+","+value);
+            }else{
+                this.entity.put(entity,"|"+doc.getId()+","+value);
+            }
+        }
+    }
+
+    private void deleteEntity(){
+
+        Iterator<Map.Entry<String,String>> entry = entity.entrySet().iterator();
+        while(entry.hasNext()){
+            String value =entry.next().getValue();
+            if(value.indexOf("|") == value.lastIndexOf("|"))
+                entry.remove();
+        }
+    }
+
+    private void updateDocs(){
+
+        deleteEntity();
+
+        for(Map.Entry<String,String> entry: entity.entrySet()){
+
+            String key = entry.getKey();
+            String value = entry.getValue();
+            String[] split = value.split("\\|");
+            if(split.length<3)
+                continue;
+            for(String entityInDoc : split){
+                if(entityInDoc.equals(""))
+                    continue;
+                String[] secondSplit = entityInDoc.split(",");
+                String docId = secondSplit[0];
+                if(secondSplit.length<2)
+                    continue;
+                String num = secondSplit[1];
+                docMutex.lock();
+                allDocuments.replace(docId, allDocuments.get(docId)+"|"+key+","+num);
+                docMutex.unlock();
+            }
+        }
+
+        wr.writeDocuments(allDocuments);
     }
 
 
@@ -181,6 +247,7 @@ public class Indexer{
             poolIndexer.awaitTermination(30, TimeUnit.MINUTES);
             wr.createPostingFile(ChunkTermDicDocs);
             updateTermDic(littleDic);
+            updateDocs();
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

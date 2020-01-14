@@ -1,12 +1,5 @@
 package Part_1;
-
-
-
-
-import Part_2.Query;
 import javafx.scene.control.Alert;
-import sun.awt.Mutex;
-
 import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -44,20 +37,26 @@ public class Parse  {
         Stemmer stemm = new Stemmer();
         String currToken = "";
         LinkedList<Document>afterParse  = new LinkedList<>();
+        String ans;
         while (!listDocument.isEmpty()) {
             Document newDoc = listDocument.poll();
-            String docName = newDoc.getId();
             //System.out.println(docName + ": Parse");
             String text = newDoc.getText();
             if(text == null)
                 continue;
+            handleEntity(newDoc);
+            if(newDoc.getId().equals("FBIS3-1")||newDoc.getId().equals("FBIS3-2"))
+                System.out.println();
             text = text.replaceAll("[^ -~]|\\${2,}|\\.{2,}|\\,|\\`","");
             String[] allTokens = text.split("(?!,[0-9])[\",\\/?>~<&=@!\\[\\]:;}{;|*#'+)_(\\s]+");
             //System.out.println(docName + ": Parse");
             newDoc.clear();
             int index = 0;
+            newDoc.setSize(allTokens.length);
+            this.setTitle(newDoc,stemm);
+            //String entity = "";
             while (index < allTokens.length) {
-                int add = 0;
+                int add;
                 boolean havaAllSpace = true;
                 String[] afterIndex = new String[3];
                 for(int i =1 ; i<4 ; i++){
@@ -72,18 +71,20 @@ public class Parse  {
 
                 String currTokenStartEnd = startEndWord(currToken);
                 if(isBetween(currToken,havaAllSpace,afterIndex)){
+
                     insertTermDic(currToken +" "+ allTokens[index + 1] +" "+ allTokens[index + 2] +" "+ allTokens[index + 3],newDoc,index);
                     index = index + 4;
                     continue;
                 }
                 if (currToken.equals("") || currToken.length() == 1 || currToken.equals("\n") || stopWord(currTokenStartEnd)) {
                     if (!currToken.equals("May")) {
+
                         index++;
                         continue;
                     }
                 }
                 boolean containNum = currTokenStartEnd.matches(".\\d.");
-                boolean containLettersAndNum =containNum && currTokenStartEnd.matches(".[a-zA-Z].");
+                boolean containLettersAndNum =containNum && currTokenStartEnd.matches("[a-zA-Z]+");
 
 
                 if (!containNum && !isMonths(currTokenStartEnd)) {
@@ -112,7 +113,7 @@ public class Parse  {
                     index++;
                     continue;
                 }else{
-                    handleWords(currToken,newDoc,currTokenStartEnd,index,stemm);
+                    ans = handleWords(currToken,newDoc,currTokenStartEnd,index,stemm);
                     index++;
                 }
             }
@@ -124,16 +125,101 @@ public class Parse  {
         return  afterParse;
 
     }
+    private String secondTermEntity(String term){
+
+        if(term == null || term.length()<2)
+            return null;
+        if(!Character.isLetter(term.charAt(term.length()-1)))
+            term= term.substring(0,term.length()-1);
+        if(term.matches("^[A-Z][a-z]*$"))
+            return term;
+
+        return null;
+    }
+
+
+    private String firstTermEntity(String term){
+
+        if(term == null || term.length()<2)
+            return null;
+        if(!Character.isLetterOrDigit(term.charAt(0)))
+            term= term.substring(1);
+        if(term.matches("^[A-Z][a-z]*$"))
+            return term;
+
+        return null;
+    }
+
+    private void handleEntity(Document newDoc){
+
+        String[] split = newDoc.getText().split("[\\s-]+");
+        String entity = "";
+        int isEntity = 0;
+        String term = null;
+
+        for(String word:split){
+            if(newDoc.getId().equals("FBIS3-2")&& word.equals("Vasil"))
+                System.out.println();
+            if(isEntity == 0) {
+                term = firstTermEntity(word);
+                if(term !=null){
+                    isEntity++;
+                    entity =term;
+                }else{
+                    entity = "";
+                }
+
+            }
+            else{
+                term = secondTermEntity(word);
+                if(term!=null){
+                    isEntity++;
+                    entity =entity+" "+term;
+                    if(!Character.isLetter(word.charAt(term.length()-1))){
+                        insertEntity(entity.toUpperCase(),newDoc);
+                        entity = "";
+                        isEntity = 0;
+                    }
+                }
+                else if(isEntity>1){
+                    insertEntity(entity.toUpperCase(),newDoc);
+                    entity = "";
+                    isEntity = 0;
+                }else{
+                    entity = "";
+                    isEntity = 0;
+                }
+            }
+
+        }
+    }
+
+    private void insertEntity(String entity,Document newDoc){
+        if(newDoc.entitys.containsKey(entity))
+            newDoc.entitys.replace(entity,newDoc.entitys.get(entity)+1);
+        else
+            newDoc.entitys.put(entity,1);
+    }
+
 
     private void insertFirstOccur(String term,Document newDoc, int index){
 
         if(term != null && !term.equals("") && term.length()>1) {
             int[] data = new int[4];
             data[0] = 1;
+            double start = index/newDoc.size;
+            if(start<0.13)
+                data[1] = 1;
+            else
+                data[1] = 0;
+            if(newDoc.title != null &&newDoc.title.contains(term.toLowerCase()))
+                data[2] = 1;
+            else
+                data[2] = 0;
             //System.out.println(term + ": Parse");
             newDoc.termDic.put(term, data);
 
-            newDoc.termPlacesInDoc.put(term, String.valueOf(index));
+            //newDoc.termPlacesInDoc.put(term, String.valueOf(index));
         }
     }
 
@@ -148,7 +234,7 @@ public class Parse  {
                 newData[0]++;
                 //System.out.println(term + ": Parse");
                 newDoc.termDic.replace(term, newData);
-                newDoc.termPlacesInDoc.replace(term, newDoc.termPlacesInDoc.get(term) + "," + index);
+                //newDoc.termPlacesInDoc.replace(term, newDoc.termPlacesInDoc.get(term) + "," + index);
 
             }
         }
@@ -167,27 +253,33 @@ public class Parse  {
 
     private String numericToPrice(String num ,String sum,String fraction ,boolean sign, boolean Dollars , boolean US ){
         //String price = num.replace("," , "");
-        String price = num;
-        if(sign)
-            price = price.substring(1);
-        if(lessThanMillion(price) &&!sum.equals("trillion") && !sum.equals("million") && !sum.equals("billion") && !sum.equals("m") && !sum.equals("bn")){
-            if(!fraction.equals(""))
-                price = price+" "+fraction+" Dollars";
-            else if(price.charAt(0) == '.')
-                price = "0"+price+" Dollars";
-            else
-                price = price+" Dollars";
-        }else{  ///greater then M
-            price = price.replace("," , "");
-            if (sum.equals("billion") || sum.equals("bn"))
-                price = new BigDecimal(price).movePointRight(3).toString(); //adds 3 zeroes. B ==> M.
-            else if (sum.equals("trillion"))
-                price = new BigDecimal(price).movePointRight(6).toString(); //adds 6 ??? zeroes. T ==> M.
+        try {
+            String price = num;
+            if (sign)
+                price = price.substring(1);
+            if (lessThanMillion(price) && !sum.equals("trillion") && !sum.equals("million") && !sum.equals("billion") && !sum.equals("m") && !sum.equals("bn")) {
+                if (!fraction.equals(""))
+                    price = price + " " + fraction + " Dollars";
+                else if (price.charAt(0) == '.')
+                    price = "0" + price + " Dollars";
+                else
+                    price = price + " Dollars";
+            } else {  ///greater then M
+                price = price.replace(",", "");
+                if (sum.equals("billion") || sum.equals("bn"))
+                    price = new BigDecimal(price).movePointRight(3).toString(); //adds 3 zeroes. B ==> M.
+                else if (sum.equals("trillion"))
+                    price = new BigDecimal(price).movePointRight(6).toString(); //adds 6 ??? zeroes. T ==> M.
 
-            price = price+" M Dollars";
+                price = price + " M Dollars";
+            }
+
+            return price;
         }
-
-        return price;
+        catch (Exception e){
+            e.printStackTrace();
+            return "";
+        }
     }
 
     private boolean equalToSum(String word){
@@ -387,7 +479,6 @@ public class Parse  {
         return false;
     }
 
-
     private boolean isNumericDayDate(String numTerm){
 
         try {
@@ -543,13 +634,11 @@ public class Parse  {
         return word;
     }
 
-    private void handleWords(String word ,Document newDoc,String currTokenStartEnd ,int index , Stemmer stem){
+    private String handleWords(String word ,Document newDoc,String currTokenStartEnd ,int index , Stemmer stem){
         word = currTokenStartEnd;
         word.replace("%" ,"");
         if(iSstemmer) {
-
             word = stem.getStermTerm(currTokenStartEnd);
-
         }
 
 
@@ -592,10 +681,12 @@ public class Parse  {
                     insertFirstOccur(word.toLowerCase() , newDoc  , index);
                 }else{
                     insertFirstOccur(word.toUpperCase() , newDoc  , index);
+                    return word;
                 }
             }
-            return;
+            return "";
         }
+        return "";
 
     }
 
@@ -771,4 +862,33 @@ public class Parse  {
 
         }
     }
+
+    private void setTitle(Document newDoc ,Stemmer stemm) {
+
+
+        if (newDoc.title != null &&!newDoc.title.equals("")) {
+            String title = newDoc.title.replaceAll("[^ -~]|\\${2,}|\\.{2,}|\\,|\\`", "");
+            String[] allTitle = title.split("(?!,[0-9])[\",\\/?>~<&=@!\\[\\]:;}{;|*#'+)_(\\s]+");
+            String afterParse = "";
+            for (String currToken : allTitle) {
+                String currTokenStartEnd = startEndWord(currToken);
+                currToken = currToken.toLowerCase();
+                if (currToken.equals("") || currToken.length() == 1 || currToken.equals("\n") || stopWord(currTokenStartEnd)) {
+                    if (!currToken.equals("May")) {
+                        continue;
+                    }
+                }
+                if (iSstemmer)
+                    currToken = stemm.getStermTerm(currTokenStartEnd);
+                currToken += " ";
+                afterParse += currToken;
+
+            }
+
+            afterParse = afterParse.substring(0, afterParse.length() - 1); // delete space
+            newDoc.setTitle(afterParse);
+
+        }
+    }
+
 }
