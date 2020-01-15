@@ -5,6 +5,7 @@ import Part_1.Indexer;
 import Part_1.Parse;
 import Part_1.ReadFile;
 import Part_2.Searcher;
+import Part_1.Indexer;
 import javafx.beans.property.SimpleIntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -15,19 +16,18 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import javafx.util.Callback;
 
 
 import javax.swing.*;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 
 public class Controller {
 
@@ -48,14 +48,16 @@ public class Controller {
     public long startTime;
     public String loadDicPath;
     public boolean stemm = false;
-    public static BlockingQueue<Document> currChunk = new LinkedBlockingQueue<>(5000);
+    public Button saveResults;
+    public TextField saveResultsPath;
     ReadFile rd;
 
-    public TextField queryText;
+    public TextField queryInput;
     public TextField QueryFilePath ;
     public String query;
     public CheckBox semantics;
     public boolean isQuery = false;
+    public static HashMap<String, List<String>> allQueriesResults;
 
 
 
@@ -111,7 +113,6 @@ public class Controller {
             }
         }
     }
-
 
     public void onBrowseDoc(){ Browse(documentPath); }
 
@@ -218,7 +219,7 @@ public class Controller {
             }
 
             ///////////////////////////////////////////////////////////////// ?????????
-            rd = new ReadFile(docPath, stemm, postingPathSaved);
+            //rd = new ReadFile(docPath, stemm, postingPathSaved);
 
             File dir = new File(loadDicPath); //which dir to load from (stemm or not).
             File[] dirFiles = dir.listFiles();
@@ -337,6 +338,7 @@ public class Controller {
         System.out.println("finish!!");
 
     }
+
     private void displayError(String error){
         Alert alert = new Alert(Alert.AlertType.ERROR);
         alert.setContentText(error);
@@ -351,6 +353,10 @@ public class Controller {
 
     private void load (String fileNameToLoadFrom) {
 
+        if(fileNameToLoadFrom.equals("docs.txt")){
+            loadDoc(fileNameToLoadFrom);
+            return;
+        }
         String line1;
         String term;
         int totalShows = 0;
@@ -365,20 +371,14 @@ public class Controller {
                 String test = scanner.nextLine();
                 line1 = test;
                 term = "";
-                if(line1.contains("insurer|FBHUMMENE") || line1.contains("FB3,20199,20213,23203"))
+                if(line1.indexOf("|") == -1) {
+                    System.out.println(line1);
                     continue;
-                try {
-                    term = line1.substring(0, line1.indexOf("|")); // only term itself, with no other data.
                 }
-                catch (Exception e){
-                    //System.out.println();
-                }
+                term = line1.substring(0, line1.indexOf("|")); // only term itself, with no other data.
                 line1 = line1.substring(line1.indexOf("|")+1); //without term itself.
-
                 totalShows = 0;
                 numOfDocs =0;
-
-
                 String[] lineChar = line1.split("\\|");
                 numOfDocs += lineChar.length;
                 for(String s : lineChar) {
@@ -387,7 +387,7 @@ public class Controller {
                         totalShows += Integer.parseInt(dot[1]);
                     }
                     catch (Exception e){
-                        //System.out.println();
+                        System.out.println(line1);
                     }
                 }
 
@@ -397,46 +397,47 @@ public class Controller {
 
                 if(term.length() == 0)
                     continue;
-                if(Character.isDigit(term.charAt(0))){
+                if(!Character.isLetter(term.charAt(0))){
 
-                    if(rd.indexer.termDic.containsKey(term)) {
+                    if(Indexer.termDic.containsKey(term)) {
                         int[] savedTermData;
-                        savedTermData = rd.indexer.termDic.get(term);
+                        savedTermData = Indexer.termDic.get(term);
                         int[] updateTermInfo = new int[3];
                         updateTermInfo[0] = savedTermData[0] + termData[0]; // adds 1 to curr # of docs
                         updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
-                        rd.indexer.termDic.replace(term, updateTermInfo);
+                        Indexer.termDic.replace(term, updateTermInfo);
                     }else{
-                        rd.indexer.termDic.put(term,termData);
+                        Indexer.termDic.put(term,termData);
                     }
 
                 }
-                else if(rd.indexer.termDic.containsKey(term)){
+                else if(Indexer.termDic.containsKey(term)){
                     int[] savedTermData;
-                    savedTermData = rd.indexer.termDic.get(term);
+                    savedTermData = Indexer.termDic.get(term);
                     int[] updateTermInfo = new int[3];
                     updateTermInfo[0] = savedTermData[0] + termData[0]; // adds 1 to curr # of docs
                     updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
-                    rd.indexer.termDic.replace(term, updateTermInfo);
+                    Indexer.termDic.replace(term, updateTermInfo);
 
                 }
-                else if(rd.indexer.termDic.containsKey(term.toUpperCase()))
+                else if(Indexer.termDic.containsKey(term.toUpperCase()))
                 {
-                    int[] savedTermData = rd.indexer.termDic.get(term.toUpperCase());
+                    int[] savedTermData = Indexer.termDic.get(term.toUpperCase());
                     int[] updateTermInfo = new int[3];
                     updateTermInfo[0] = savedTermData[0] + termData[0]; // adds 1 to curr # of docs
                     updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
-                    rd.indexer.termDic.replace(term, updateTermInfo);
-                }else if( rd.indexer.termDic.containsKey(term.toLowerCase())){
+                    Indexer.termDic.remove(term.toUpperCase());
+                    Indexer.termDic.put(term, updateTermInfo);
+                }else if( Indexer.termDic.containsKey(term.toLowerCase())){
 
-                    int[] savedTermData = rd.indexer.termDic.get(term.toLowerCase());
+                    int[] savedTermData = Indexer.termDic.get(term.toLowerCase());
                     int[] updateTermInfo = new int[3];
                     updateTermInfo[0] = savedTermData[0] + termData[0]; // adds 1 to curr # of docs
                     updateTermInfo[1] = savedTermData[1] + termData[1]; //#shows total == adds num of appearences in specific doc. !!!
-                    rd.indexer.termDic.replace(term.toLowerCase(), updateTermInfo);
+                    Indexer.termDic.replace(term.toLowerCase(), updateTermInfo);
 
                 }else{
-                    rd.indexer.termDic.put(term,termData);
+                    Indexer.termDic.put(term,termData);
                 }
             }
 
@@ -445,41 +446,268 @@ public class Controller {
 
         }
     }
+
+    private void loadDoc(String fileNameToLoadFrom){
+
+        try{
+            String currFilePath = loadDicPath + "\\" + fileNameToLoadFrom ;
+            Scanner scanner = new Scanner((new File(currFilePath)));
+            while (scanner.hasNextLine()) {
+                String test = scanner.nextLine();
+                int line = test.indexOf(",");
+                if(line != -1){
+                    Indexer.allDocuments.put(test.substring(0,line),test.substring(line+1));
+                }
+
+            }
+
+
+
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+    }
+
     private boolean alreadyIndexedAll() {
         return alreadyIndexedWithStemming && alreadyIndexedWithoutStemming;
     }
 
-
-
-
-    private void onRun() {
+    public void onRun() {
         //isQuery = true;
-        String query = queryText.getText();
+        postingPathSaved = this.postingPath.getText(); //posing directories and stop words locationnn!
+        String query = queryInput.getText();
         String path = QueryFilePath.getText();
         Searcher searcher;
-        if (query != null) //only input.
-            searcher = new Searcher(query, null, null, semantics.isSelected());
-        else
-            searcher = new Searcher(null, null, path, semantics.isSelected());
 
-//        Thread runQueryThread = new Thread(searcher);
-////        runQueryThread.start();
-////        try {
-////            runQueryThread.join();
-////        } catch (InterruptedException e) {
-////            e.printStackTrace();
-////        }
+        if(Indexer.allDocuments == null || Indexer.termDic == null ) {
+            try {
+                onLoadInv();
+            }
+            catch (IOException e){
+                e.printStackTrace();
+            }
+        }
+
+
+        if (query != null && !query.equals("")) //an input query text.
+            searcher = new Searcher(query, postingPathSaved, null, semantics.isSelected(),stemm);
+        else
+            searcher = new Searcher(null, postingPathSaved, path, semantics.isSelected(),stemm);
 
 
         searcher.processQuery(); //updates the relevant docs for queryyyy
+        allQueriesResults = searcher.relevantDocsForAll;
+        displayResults();
+
     }
 
     public void onBrowseQuery() { Browse(QueryFilePath); }
 
+    public void onSaveResults() {
 
-    public void onSaveResults(ActionEvent actionEvent) {
+        //saveResults = saveResultsPath.getText();
+
+        if (saveResultsPath.getText()=="")
+            displayError("You have to fill a path to save the results!");
+        else {
+            File savedFile = new File(postingPathSaved);
+
+            if (!savedFile.exists()) {
+                displayError("Invalid Path");
+            }
+            try {
+                PrintWriter out = new PrintWriter(new FileWriter(postingPathSaved + "\\results.txt", true));
+
+                for (Map.Entry<String, List<String>> entry : allQueriesResults.entrySet()) {
+                    String queryID = entry.getKey();
+                    List<String> value = entry.getValue();
+                    for (String docID : value)
+                        out.append(queryID + " 0 " + docID + " 0 1 mt\n");
+
+                }
+                out.close();
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public void onBrowseResults(ActionEvent actionEvent) {
+
+
+    }
+
+    public void displayResults(){
+        ObservableList<Map.Entry<String, String>> invertedList = ObservableListResultst();
+        Stage stage = new Stage();
+        stage.setTitle("Results");
+        TableView table = new TableView<>();
+
+        TableColumn<Map.Entry<String, String>, String> tokenCol = new TableColumn<>("Query Id");
+        tokenCol.setMinWidth(200);
+        tokenCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getKey()));
+
+        TableColumn<Map.Entry<String, String> , String> numCol = new TableColumn<>("Doc Id");
+        numCol.setMinWidth(100);
+        numCol.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getValue()));
+
+        TableColumn button = new TableColumn<>("Doc Id");
+        button.setMinWidth(50);
+        button.setCellFactory(ActionButtonTableCell.forTableColumn("Entities",
+                (Map.Entry<String, String> entry) -> {
+                    getEntityForDoc(entry.getValue());
+           return entry;
+        }));
+
+
+        table.setItems(invertedList);
+        //table.getColumns().addAll(tokenCol, numCol);
+        table.getColumns().addAll(tokenCol, numCol,button);
+
+        VBox vbox = new VBox();
+        vbox.getChildren().addAll(table);
+        Scene scene = new Scene(vbox);
+        stage.setScene(scene);
+        stage.show();
+    }
+
+    private ObservableList<Map.Entry<String, String>> ObservableListResultst(){
+
+        ObservableList<Map.Entry<String, String>> invertedList = FXCollections.observableArrayList();
+
+        for(Map.Entry<String, List<String>> entry: this.allQueriesResults.entrySet()){
+
+            for(String docId : entry.getValue()) {
+                Map.Entry<String,String> newEntry =
+                        new AbstractMap.SimpleEntry<>(entry.getKey(), docId);
+                invertedList.add(newEntry);
+
+            }
+
+        }
+        return invertedList;
+    }
+
+    private String getEntityForDoc(String id){
+
+       String value = Indexer.allDocuments.get(id);
+       HashMap<String,Integer> entitys = new HashMap<>();
+       if(value == null)
+           return "";
+       String[] split = value.split("\\|");
+       int index = 0;
+       for(String entityData: split){
+          if(index != 0){
+              String[] secondSplit = entityData.split(",");
+              entitys.put(secondSplit[0],Integer.parseInt(secondSplit[1]));
+          }else{
+              index++;
+          }
+       }
+
+       index = 0;
+       String ans = "";
+        for(Map.Entry<String,Integer> entry : sortByValue(entitys).entrySet()){
+            if(index == 5)
+                break;
+            else
+               ans+= entry.getKey()+"\n";
+            index++;
+
+        }
+
+
+        displayEntity(ans,id);
+        return ans;
+    }
+
+    private void displayEntity(String info,String docId){
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(docId);
+        alert.setContentText(info);
+        alert.show();
+    }
+
+    public static Map<String, Integer> sortByValue(final Map<String, Integer> wordCounts) {
+        return wordCounts.entrySet()
+                .stream()
+                .sorted((Map.Entry.<String, Integer>comparingByValue().reversed()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    }
+
+    private void saveDocsAndTerms(){
+
+        try {
+            //
+            File docsFile = new File("C:\\Users\\omer\\Desktop\\savedDocs");
+            File termsFile = new File("C:\\Users\\omer\\Desktop\\savedTerms");
+
+            if (!docsFile.exists()) {
+                docsFile.createNewFile();
+            }
+
+            if (!termsFile.exists()) {
+                termsFile.createNewFile();
+            }
+
+            PrintWriter out_docs = new PrintWriter(new FileWriter("C:\\Users\\omer\\Desktop\\savedDocs", true));
+            PrintWriter out_terms = new PrintWriter(new FileWriter("C:\\Users\\omer\\Desktop\\savedTerms", true));
+
+
+            /////save docs
+            for (Map.Entry<String, String> entry : Indexer.allDocuments.entrySet()) {
+                out_docs.append(entry.getKey()+" "+entry.getValue());
+            }
+            out_docs.close();
+
+            for (Map.Entry<String, int[]> entry : Indexer.termDic.entrySet()) {
+                int[] value = entry.getValue();
+                out_terms.append(entry.getKey()+" "+value[0] + "," + value[1]);
+            }
+            out_terms.close();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+
+    }
+
+    private void uploadData(){
+
+        try {
+
+            File docsFile = new File("C:\\Users\\omer\\Desktop\\savedDocs");
+            File termsFile = new File("C:\\Users\\omer\\Desktop\\savedTerms");
+
+            BufferedReader docs = new BufferedReader(new InputStreamReader(new FileInputStream(docsFile)));
+            BufferedReader terms = new BufferedReader(new InputStreamReader(new FileInputStream(docsFile)));
+
+            for (String currLine; (currLine = docs.readLine()) != null; ){
+                int indexKey = currLine.indexOf(" ");
+                Indexer.allDocuments.put(currLine.substring(0,indexKey),currLine.substring(indexKey+1));
+            }
+            docs.close();
+
+            for (String currLine; (currLine = terms.readLine()) != null; ){
+                int indexKey = currLine.indexOf(" ");
+                int firstValue= currLine.indexOf(" ")+1;
+                int secondValue= currLine.indexOf(" ",firstValue)+1;
+                int[] value = new int[2];
+                value[0] = Integer.parseInt(currLine.substring(firstValue,firstValue+1));
+                value[1] = Integer.parseInt(currLine.substring(secondValue,secondValue+1));
+                Indexer.termDic.put(currLine.substring(0,indexKey), value );
+            }
+
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+
     }
 }

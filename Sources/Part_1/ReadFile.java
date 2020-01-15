@@ -21,7 +21,7 @@ public class ReadFile extends Thread {
     public static boolean stopParser = false;
     public Queue<Document> documentsSet = new LinkedList<>();
     public LinkedList<Document> afterParse = new LinkedList<>();
-    ExecutorService poolReadFile =  Executors.newFixedThreadPool(20);
+    ExecutorService poolReadFile =  Executors.newFixedThreadPool(10);
     private Parse parse ;
     private int numOfDoc = 0;
     private Mutex lockAddToAfterParse = new Mutex();
@@ -52,7 +52,7 @@ public class ReadFile extends Thread {
     // reads all the files inside the corpus directory
     public void readInsideAllFiles() {
 
-        File rootDirectory = new File(pathDir + "\\corpus");
+        File rootDirectory = new File(pathDir + "\\corpus_1");
         File[] allDirectories = rootDirectory.listFiles();
         //System.out.println("ReadFile");
         if (allDirectories != null) {
@@ -147,7 +147,7 @@ public class ReadFile extends Thread {
 
             documentsSet.add(newDoc);
             numOfDoc++;
-            if (numOfDoc % 100 == 0) {
+            if (numOfDoc % 50 == 0) {
                 LinkedList newList = new LinkedList(documentsSet);
                 documentsSet.clear();
                 try {

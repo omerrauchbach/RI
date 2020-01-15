@@ -8,14 +8,17 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import Part_1.Indexer;
+import sun.awt.Mutex;
 
 public class Writer {
 
     private final String path ;
     private StringBuilder allTermsInPostingFile;
     public static int counterTest =0;
+    public static Mutex[] mArray = new Mutex[7];
 
     public Writer(String path) {
 
@@ -29,6 +32,15 @@ public class Writer {
         File rvFile = new File(path + "\\r-v.txt");
         File wzFile = new File(path + "\\w-z.txt");
         File nonLetterFile = new File(path + "\\nonLetter.txt");
+        File docsFile = new File(path + "\\docs.txt");
+        //File entityFile = new File(path + "\\entity.txt");
+        mArray[0] = new Mutex();
+        mArray[1] = new Mutex();
+        mArray[2] = new Mutex();
+        mArray[3] = new Mutex();
+        mArray[4] = new Mutex();
+        mArray[5] = new Mutex();
+        mArray[6] = new Mutex();
 
         try {
 
@@ -54,8 +66,11 @@ public class Writer {
             if (!wzFile.exists()) {
                 wzFile.createNewFile();
             }
-            if (!rvFile.exists()) {
+            if (!nonLetterFile.exists()) {
                 nonLetterFile.createNewFile();
+            }
+            if (!docsFile.exists()) {
+                docsFile.createNewFile();
             }
         }catch (IOException e){
             e.printStackTrace();
@@ -76,6 +91,7 @@ public class Writer {
         for(Map.Entry<String,String> entry : ChunkTermDicDocs.entrySet()){
             String value = entry.getValue();
             String key = entry.getKey();
+            //System.out.println(key + "|" + value);
             char charOfKey = key.charAt(0);
 
 
@@ -99,50 +115,84 @@ public class Writer {
 
         try {
             PrintWriter out ;
+
             if (!ad.equals("")) {
-                out = new PrintWriter(new FileWriter(path + "\\a-d.txt", true));
-                out.append(ad);
-                out.close();
+                mArray[0].lock();
+                //FileWriter fw = new FileWriter(path + "\\a-d.txt", true);
+
+                PrintWriter out_a = new PrintWriter(new FileWriter(path + "\\a-d.txt", true));
+                out_a.append(ad);
+                out_a.close();
+                mArray[0].unlock();
             }
             if (!ei.equals("")) {
-                out = new PrintWriter(new FileWriter(path + "\\e-i.txt", true));
-                out.append(ei);
-                out.close();
+                mArray[1].lock();
+                PrintWriter out_e = new PrintWriter(new FileWriter(path + "\\e-i.txt", true));
+                out_e.append(ei);
+                out_e.close();
+                mArray[1].unlock();
             }
             if (!jm.equals("")) {
-                out = new PrintWriter(new FileWriter(path + "\\j-m.txt", true));
-                out.append(jm);
-                out.close();
+                mArray[2].lock();
+                PrintWriter out_j = new PrintWriter(new FileWriter(path + "\\j-m.txt", true));
+                out_j.append(jm);
+                out_j.close();
+                mArray[2].unlock();
             }
             if (!nq.equals("")) {
-                out = new PrintWriter(new FileWriter(path + "\\n-q.txt", true));
-                out.append(nq);
-                out.close();
+                mArray[3].lock();
+                PrintWriter out_n = new PrintWriter(new FileWriter(path + "\\n-q.txt", true));
+                out_n.append(nq);
+                out_n.close();
+                mArray[3].unlock();
             }
             if (!rv.equals("")) {
-                out = new PrintWriter(new FileWriter(path + "\\r-v.txt", true));
-                out.append(rv);
-                out.close();
+                mArray[4].lock();
+                PrintWriter out_r = new PrintWriter(new FileWriter(path + "\\r-v.txt", true));
+                out_r.append(rv);
+                out_r.close();
+                mArray[4].unlock();
             }
             if (!wz.equals("")) {
-                out = new PrintWriter(new FileWriter(path + "\\w-z.txt", true));
-                out.append(wz);
-                out.close();
+               mArray[5].lock();
+                PrintWriter out_w = new PrintWriter(new FileWriter(path + "\\w-z.txt", true));
+                out_w.append(wz);
+                out_w.close();
+                mArray[5].unlock();
             }
             if (!nonLetter.equals("")) {
-                out = new PrintWriter(new FileWriter(path + "\\nonLetter.txt", true));
-                out.append(nonLetter);
-                out.close();
+                mArray[6].lock();
+                PrintWriter out_non = new PrintWriter(new FileWriter(path + "\\nonLetter.txt", true));
+                out_non.append(nonLetter);
+                out_non.close();
+                mArray[6].unlock();
             }
         }
         catch (IOException e){
             e.printStackTrace();
         }
-        //System.out.println("Wrote this cuhnk to disk." + counterTest);
+        System.out.println("Wrote this cuhnk to disk." + counterTest);
         counterTest++;
 
     }
 
+
+
+    public void writeDocuments(HashMap<String, String> docs){
+
+        try {
+            PrintWriter out = new PrintWriter(new FileWriter(path + "\\docs.txt", true));
+            for(Map.Entry<String,String> entry : docs.entrySet()) {
+                String docId = entry.getKey();
+                out.append(docId + "," + entry.getValue() + "\n");
+            }
+            out.close();
+        }
+        catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
     public void sortPostingFiles(){
 
         File dir = new File(path);
