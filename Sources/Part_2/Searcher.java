@@ -3,6 +3,7 @@ package Part_2;
 import Part_1.Document;
 import Part_1.Parse;
 import Part_1.Indexer;
+import com.medallia.word2vec.Word2VecModel;
 import javafx.scene.control.Alert;
 import sun.awt.Mutex;
 
@@ -11,8 +12,7 @@ import java.io.*;
 import java.net.URL;
 import java.util.*;
 
-public class Searcher implements Runnable {
-
+public class Searcher {
 
     private String queryText;
     private Query query;
@@ -27,28 +27,33 @@ public class Searcher implements Runnable {
     private StringBuilder allLinesInQueries;
     private Mutex lockAddToAfterParse = new Mutex();
     public HashMap<String, String[]> queriesToSearchAndRank;
-    private LinkedList<LinkedList<String>> relevantDocsForAll;
 
+    public HashMap<String,List<String>> relevantDocsForAll;
+    private String postingPathSaved ;
 
     //private Indexer indexer;
 
-    public Searcher(String query, String stopWordsPath, String queryFilePath, boolean semantics) {
-        this.parse = new Parse(false, stopWordsPath, true);
+    public Searcher(String query, String  postingPathSaved, String queryFilePath, boolean semantics,boolean stemm) {
+        this.parse = new Parse(false, postingPathSaved, true);
         this.queryText = query;
-        this.stopWordsPath = stopWordsPath + "stop_words.txt";
+
         this.semantics = semantics;
-        this.queryFilePath = queryFilePath;
+        this.queryFilePath = queryFilePath+"\\queries.txt";
         indexQuery = 1;
-        this.queryFilePath = queryFilePath;
+
+
         queriesToSearchAndRank = new LinkedHashMap<>();
-        relevantDocsForAll = new LinkedList<>();
-        //indexer = Indexer.
+        relevantDocsForAll = new HashMap<>();
+        if (stemm)
+            this.postingPathSaved = postingPathSaved+"\\stemming";
+        else
+            this.postingPathSaved = postingPathSaved+"\\nonStemming";
+
     }
 
     public void processQuery() {
 
-        Query query;
-        String[] queryTextSplit = new String[1000]; //////////???????????
+        String[] queryTextSplit;
         Document doc;
         querySet = new LinkedList<>();
 
@@ -56,7 +61,9 @@ public class Searcher implements Runnable {
         if (queryText != null) { //only string. inputtt
 
             if(semantics)
-                queryText = queryText + " " + addSemanticWords(queryText);
+
+                queryText = addSemantics(queryText);
+
 
             queryTextSplit = queryText.split(" ");
             StringBuilder queryToProcess = new StringBuilder();
@@ -91,14 +98,16 @@ public class Searcher implements Runnable {
             Document currQuery = new Document();
 
             while (!queryAfterParse.isEmpty()) { //each query is a separate doc in list.
-               // currQuery = new Document();
+                // currQuery = new Document();
                 currQuery = queryAfterParse.poll();
                 String[] toRank = prepareToRank(currQuery); //prepare String[] of query words to rank.
                 queriesToSearchAndRank.put("query" + currQuery.getId(), toRank);
             }
         }
 
-        Ranker ranker = new Ranker(null); ////////////////// ????????????????????
+
+        Ranker ranker = new Ranker(postingPathSaved); ////////////////// ????????????????????
+
 
   /*      // puts all the query terms into an array for rank
         HashMap<String, int[]> queryDic = query.getQueryTermDic();
@@ -126,7 +135,7 @@ public class Searcher implements Runnable {
     private void readQueryFile() {
 
         File queriesFile = new File(queryFilePath);
-        //System.out.println("ReadFile");
+
         if (queriesFile != null) {
             allLinesInQueries = new StringBuilder();
             try {
@@ -149,14 +158,21 @@ public class Searcher implements Runnable {
                     idQueryyy = restOfQueries.indexOf(":")+2; //index!!! of Query number ID
                     idQuery = restOfQueries.substring(idQueryyy, restOfQueries.indexOf("<title>")-2); //number itself.
                     int endInd = restOfQueries.indexOf("<desc>", startInd)-5; //searches for "<desc>" from starts index
-                    String currQuery = restOfQueries.substring(startInd+8, endInd); //query itself.
+
+                    int descStart = restOfQueries.indexOf("<desc>", startInd);
+                    int descEnd = restOfQueries.indexOf("<narr>", startInd);
+                    String queryDescription = restOfQueries.substring(descStart + 19, descEnd).trim();
+                    String currQuery = restOfQueries.substring(startInd+8, endInd)+" "+queryDescription; //query itself.
+
 
                     int endQuery = restOfQueries.indexOf("</top>", endInd);
                     restOfQueries = restOfQueries.substring(endQuery);
 
                     //set Id Query <num>"
                     if (semantics)
-                        currQuery = currQuery + " " + addSemanticWords(currQuery);
+
+                        currQuery = addSemantics(currQuery);
+
 
                     allQueries[numOfQueries] = new Document();
                     allQueries[numOfQueries].setId(idQuery);
@@ -177,7 +193,7 @@ public class Searcher implements Runnable {
                     lockAddToAfterParse.lock();      ///??????????????????????/
                     queryAfterParse.addAll(AfterParseQueries);
                     lockAddToAfterParse.unlock();      ///??????????????????????/
-                   // parseIndexrList++;
+                    // parseIndexrList++;
                     //System.out.println("to Parser: " +parseIndexrList);
 
                 } catch (Exception e) {
@@ -194,12 +210,6 @@ public class Searcher implements Runnable {
             alert.show();
         }
         //stopReadFile = true;
-    }
-
-
-
-    private void createQuery(){
-
     }
 
     private String removeDelimiters(String word) {
@@ -220,37 +230,57 @@ public class Searcher implements Runnable {
         return word;
     }
 
-    @Override
-    public void run() {
-        
-    }
-
-    public void test(){
-        processQuery();
-    }
-
     public Queue<String> getRelevantDocs() {
         return relevantDocs;
     }
 
-    private String addSemantics(String queryTerms) {
+
+    public String addSemantics(String queryTerms) { //returns the query itself + 3 synonymus for each word in query.
+
         String[] querySplitted = queryTerms.split(" ");
         StringBuilder semanticQuery = new StringBuilder();
         int i = 0;
+
         while (i < querySplitted.length) {
             querySplitted[i] = removeDelimiters(querySplitted[i]);
-            String result = addSemanticWords(querySplitted[i]);
+            String result = addSemanticWordsOffline(querySplitted[i]);
 
             if (result != null && !result.equals(""))
                 semanticQuery.append(result); //2 more words.
-            else
-                semanticQuery.append(querySplitted[i]); //word itself. no changes.
+            else{
+                semanticQuery.append(querySplitted[i]);
+            }
             i++;
         }
-        return querySplitted.toString();
+        return semanticQuery.toString();
     }
 
-    public String addSemanticWords(String terms) {
+    public String addSemanticWordsOffline(String term) {
+
+        String path = "C:\\Users\\Tali\\IdeaProjects\\RI"; //// changeeee
+        String results = "";
+
+        try {
+            Word2VecModel model = Word2VecModel.fromTextFile(new File(path + "\\word2vec.c.output.model.txt"));
+            com.medallia.word2vec.Searcher semanticSearcher = model.forSearch();
+
+            int numOfResultsInList = 4;
+
+            List<com.medallia.word2vec.Searcher.Match> matches = semanticSearcher.getMatches(term, numOfResultsInList);
+
+            for (com.medallia.word2vec.Searcher.Match match : matches) {
+                results = results + " " + match.match(); //return the term;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (com.medallia.word2vec.Searcher.UnknownWordException e) {
+            // model doesn't know the word.
+        }
+        return results;
+    }
+
+        /*public String addSemanticWords(String terms) {
+
 
         StringBuilder allWords = new StringBuilder();
         allWords.append(terms); //word itself.
@@ -302,5 +332,7 @@ public class Searcher implements Runnable {
         } catch (IOException e) {
             return null;
         }
-    }
+
+    }*/
 }
+
