@@ -48,6 +48,7 @@ public class Controller {
     public long startTime;
     public String loadDicPath;
     public boolean stemm = false;
+r
     public Button saveResults;
     public TextField saveResultsPath;
     ReadFile rd;
@@ -57,7 +58,9 @@ public class Controller {
     public String query;
     public CheckBox semantics;
     public boolean isQuery = false;
+
     public static HashMap<String, List<String>> allQueriesResults;
+
 
 
 
@@ -464,6 +467,7 @@ public class Controller {
 
 
 
+
         }catch (Exception e){
             e.printStackTrace();
         }
@@ -498,9 +502,12 @@ public class Controller {
             searcher = new Searcher(null, postingPathSaved, path, semantics.isSelected(),stemm);
 
 
+    public void getAllLengthes() {
+
         searcher.processQuery(); //updates the relevant docs for queryyyy
         allQueriesResults = searcher.relevantDocsForAll;
         displayResults();
+
 
     }
 

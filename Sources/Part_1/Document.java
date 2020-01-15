@@ -48,6 +48,23 @@ public class Document {
         return id;
     }
 
+    public String getTermDicAsString() {
+
+        String ans = "";
+        //String[] stringArrayReturn = new String[termDic.size()];
+        //Set<String> toReturn = termDic.keySet();
+
+        for (String key : termDic.keySet())
+            ans = ans + " " + key;
+
+       // stringArrayReturn = (String[])toReturn.toArray();
+
+ /*       for(int i=0; i<termDic.size(); i++)
+            stringArrayReturn[i] = toReturn.*/
+
+        return ans;
+    }
+
     public void setTitle(String title) {
         this.title = title;
     }

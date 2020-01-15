@@ -27,6 +27,7 @@ public class Searcher {
     private StringBuilder allLinesInQueries;
     private Mutex lockAddToAfterParse = new Mutex();
     public HashMap<String, String[]> queriesToSearchAndRank;
+
     public HashMap<String,List<String>> relevantDocsForAll;
     private String postingPathSaved ;
 
@@ -35,9 +36,11 @@ public class Searcher {
     public Searcher(String query, String  postingPathSaved, String queryFilePath, boolean semantics,boolean stemm) {
         this.parse = new Parse(false, postingPathSaved, true);
         this.queryText = query;
+
         this.semantics = semantics;
         this.queryFilePath = queryFilePath+"\\queries.txt";
         indexQuery = 1;
+
 
         queriesToSearchAndRank = new LinkedHashMap<>();
         relevantDocsForAll = new HashMap<>();
@@ -45,6 +48,7 @@ public class Searcher {
             this.postingPathSaved = postingPathSaved+"\\stemming";
         else
             this.postingPathSaved = postingPathSaved+"\\nonStemming";
+
     }
 
     public void processQuery() {
@@ -53,10 +57,13 @@ public class Searcher {
         Document doc;
         querySet = new LinkedList<>();
 
+
         if (queryText != null) { //only string. inputtt
 
             if(semantics)
+
                 queryText = addSemantics(queryText);
+
 
             queryTextSplit = queryText.split(" ");
             StringBuilder queryToProcess = new StringBuilder();
@@ -98,7 +105,9 @@ public class Searcher {
             }
         }
 
+
         Ranker ranker = new Ranker(postingPathSaved); ////////////////// ????????????????????
+
 
   /*      // puts all the query terms into an array for rank
         HashMap<String, int[]> queryDic = query.getQueryTermDic();
@@ -149,17 +158,21 @@ public class Searcher {
                     idQueryyy = restOfQueries.indexOf(":")+2; //index!!! of Query number ID
                     idQuery = restOfQueries.substring(idQueryyy, restOfQueries.indexOf("<title>")-2); //number itself.
                     int endInd = restOfQueries.indexOf("<desc>", startInd)-5; //searches for "<desc>" from starts index
+
                     int descStart = restOfQueries.indexOf("<desc>", startInd);
                     int descEnd = restOfQueries.indexOf("<narr>", startInd);
                     String queryDescription = restOfQueries.substring(descStart + 19, descEnd).trim();
                     String currQuery = restOfQueries.substring(startInd+8, endInd)+" "+queryDescription; //query itself.
+
 
                     int endQuery = restOfQueries.indexOf("</top>", endInd);
                     restOfQueries = restOfQueries.substring(endQuery);
 
                     //set Id Query <num>"
                     if (semantics)
+
                         currQuery = addSemantics(currQuery);
+
 
                     allQueries[numOfQueries] = new Document();
                     allQueries[numOfQueries].setId(idQuery);
@@ -221,6 +234,7 @@ public class Searcher {
         return relevantDocs;
     }
 
+
     public String addSemantics(String queryTerms) { //returns the query itself + 3 synonymus for each word in query.
 
         String[] querySplitted = queryTerms.split(" ");
@@ -266,6 +280,7 @@ public class Searcher {
     }
 
         /*public String addSemanticWords(String terms) {
+
 
         StringBuilder allWords = new StringBuilder();
         allWords.append(terms); //word itself.
@@ -317,5 +332,7 @@ public class Searcher {
         } catch (IOException e) {
             return null;
         }
+
     }*/
 }
+
