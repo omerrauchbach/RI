@@ -35,6 +35,7 @@ public class Ranker {
             List<String> value = rank(entry.getValue());
             listOfQueries.put(key,value);
             setOfDoc.clear();
+
         }
         return listOfQueries;
     }
@@ -43,33 +44,43 @@ public class Ranker {
 
 
         this.avgLengthOfDoc = 209;
-        this.numberOfDoc = 994;
         HashMap<String,Double> allDocRank =new HashMap<>();
-
-
         HashMap<String,HashMap<String,int[]>> docsData = new HashMap<>();
+        String term = null ;
         for(int indexQuery = 0 ;  indexQuery < terms.length ; indexQuery++) {
-            docsData.put(terms[indexQuery],getDataForTerm(terms[indexQuery]));
+            term = checkTerm(terms[indexQuery]);
+            if(term == null) {
+                terms[indexQuery] ="";
+                continue;
+            }
+            docsData.put(terms[indexQuery],getDataForTerm(term));
         }
 
         LinkedList<int[]> valuesList = new LinkedList<>();
         for(String docId : setOfDoc ){
             for(int indexQuery = 0 ;  indexQuery < terms.length ; indexQuery++){
+
+                if(terms[indexQuery].equals(""))
+                    continue;
                 HashMap<String,int[]> dataForQuery =  docsData.get(terms[indexQuery]);
-                int[] values =  dataForQuery.get(docId);
-                if(values!= null)
+                if(dataForQuery.containsKey(docId))
                     valuesList.push(dataForQuery.get(docId));
+
             }
             Double rankedDoc =rankQueryDoc(valuesList);
             valuesList.clear();
             allDocRank.put(docId,rankedDoc);
         }
 
-        allDocRank.entrySet().stream().sorted((k2,k1) -> -k2.getValue().compareTo(k1.getValue()));
+
+        //allDocRank.entrySet().stream().sorted((k2,k1) -> -k2.getValue().compareTo(k1.getValue()));
+
+
 
         int index =0;
         List<String> topValues = new LinkedList<>();
         for(Map.Entry<String,Double> entry : sortByValue(allDocRank).entrySet()){
+            //System.out.println(entry.getValue());
             if(index == 50)
                 break;
             else
@@ -77,6 +88,8 @@ public class Ranker {
             index++;
 
         }
+
+
         return topValues;
 
     }
@@ -86,6 +99,20 @@ public class Ranker {
                 .stream()
                 .sorted((Map.Entry.<String, Double>comparingByValue().reversed()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    }
+
+    private String checkTerm(String term){
+
+
+        if (Indexer.termDic.containsKey(term))
+            return term;
+        else if (term.equals(term.toUpperCase())){
+            return term.toLowerCase();
+
+        } else if (Indexer.termDic.containsKey(term.toUpperCase())){
+            return term.toUpperCase();
+        }
+        return null;
     }
 
     public String getFilePath(String term) {
@@ -123,10 +150,11 @@ public class Ranker {
             BufferedReader myBufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
             for (String currLine; (currLine = myBufferedReader.readLine()) != null; ){
                 int indexTermFromLine = currLine.indexOf("|");
-                if (indexTermFromLine==-1)
-                    continue;
+                String lineTerm = currLine.substring(0,indexTermFromLine);
+                boolean equalTermsUpper = lineTerm.equals(term.toUpperCase());
+                boolean equalTermsLower = lineTerm.equals(term.toLowerCase());
 
-                if(currLine.substring(0,indexTermFromLine).equals(term)) {
+                if(equalTermsUpper||equalTermsLower) {
                     int[] dataTermDoc ;
                     String docId;
                     String withOutTerm = currLine.substring(currLine.indexOf("|") + 1);
@@ -136,11 +164,10 @@ public class Ranker {
                         docId = docSplit[0]; /// doc name
                         setOfDoc.add(docId);
                         dataTermDoc = new int[5];
-
-                        int[] termData = Indexer.termDic.get(term);
+                        int[] termData;
+                        termData=Indexer.termDic.get(term);
                         if(termData == null)
-                            System.out.println(term);
-                        //int[] docData = Indexer.allDocuments.get(docId);
+                            System.out.println(term+": null termData Rank!!!!");
                         dataTermDoc[0] = termData[0]; // # df
                         dataTermDoc[1] = Integer.parseInt(docSplit[1]); //tf
                         dataTermDoc[2] = geLengthOfDoc(docId); //docLength
@@ -151,9 +178,14 @@ public class Ranker {
                         docs.put(docId,dataTermDoc);
 
                     }
-                    continue;
+
+
                 }
+
+
             }
+
+
         }
         catch (Exception e){
             e.printStackTrace();
@@ -170,24 +202,21 @@ public class Ranker {
 
         return Indexer.allDocuments.size();
 
+
     }
 
     private int geLengthOfDoc(String docId){
 
+
         String value = Indexer.allDocuments.get(docId);
-        if(value == null)
-            return 0;
+
         String[] split = value.split("[,\\|]+");
         int length = 0;
         try{
-           // if (split[2].matches("[0123456789]")) ////////////CHANGEEEEEEEEEEEEEEEEEEEEee/////
-                length = Integer.parseInt(split[2]);
-           // else
-            //    length = avgLengthOfDoc;
+            length = Integer.parseInt(split[2]);
 
         }catch (Exception e){
             e.printStackTrace();
-            length = avgLengthOfDoc;
         }
 
         return length;
@@ -199,20 +228,11 @@ public class Ranker {
     /**
      *
      *       need to change the avgLengthOfDoc to the current doc
-     *       0             1     2      3    4
-     * @param data order: numOfDocs overall ,df,avgLength,tf,docLength
+     *                     0  1  2
+     * @param data order: df,tf,docLength
      * @return
      */
-    private double rankTermDoc(int[] data) {
-
-    /*    double b = 0.75;
-        double k = 0.5;
-        double length = data[2] / avgLengthOfDoc;
-        double denominator = data[1] + k * (1 - b + (b * length));
-        double numerator = (k + 1) * data[1];
-        double log = Math.log10((472525 - data[0]) / data[0]);
-                return (numerator / denominator) * log;
-*/
+    private double rankTermDoc(int[] data){
 
         double b = 0.75;
         double k =1.5;
@@ -220,7 +240,14 @@ public class Ranker {
         double numerator = (k+1)*data[1];
         double log = Math.log10((numberOfDoc-data[0]+0.5)/(data[0]+0.5));
         return (numerator/denominator)*log;
-
+/*
+        double b = 0.75;
+        double k = 0.5;
+        double length = data[2] / avgLengthOfDoc;
+        double denominator = data[1] + k * (1 - b + (b * length));
+        double numerator = (k + 1) * data[1];
+        double log = Math.log10((472525 - data[0]) / data[0]);
+        return (numerator / denominator) * log;*/
     }
 
     private double rankQueryDoc(LinkedList<int[]> dataQuery){
@@ -230,15 +257,25 @@ public class Ranker {
             double rankPerTerm = rankTermDoc(data);
             rankDoc+= rankPerTerm;
 
-            //double addToRank = rankPerTerm*0.1;
+            double addToRank = rankPerTerm*0.1;
 
             ///// location //////
-            //if(data[3] == 1)
-            //    rankDoc+= addToRank;
+            if(data[3] == 1)
+                rankDoc+= addToRank;
             ////title////
-            //if(data[4] == 1)
-             //   rankDoc+= addToRank;
+            if(data[4] == 1)
+                rankDoc+= addToRank;
+
         }
+
+
+
         return rankDoc;
     }
+
+
+
+
+
+
 }

@@ -125,6 +125,82 @@ public class Searcher {
     private void readQueryFile() {
 
         File queriesFile = new File(queryFilePath);
+
+        if (queriesFile != null) {
+            allLinesInQueries = new StringBuilder();
+            try {
+                BufferedReader myBufferedReader = new BufferedReader(new InputStreamReader(new FileInputStream(queriesFile)));
+                for (String currLine; (currLine = myBufferedReader.readLine()) != null; )
+                    allLinesInQueries.append(currLine + System.lineSeparator());
+
+                //createDoc();
+                String text;
+                String idQuery;
+                int idQueryyy;
+                String restOfQueries = allLinesInQueries.toString();
+                //String id = allLinesInQueries.substring(allLinesInQueries.indexOf("<num>") + 2, endIndexId).trim();
+                int startInd = allLinesInQueries.indexOf("<title>");
+                Document[] allQueries = new Document[30];
+                int numOfQueries = 0;
+
+                while (startInd != -1) {
+                    numOfQueries++;
+                    idQueryyy = restOfQueries.indexOf(":")+2; //index!!! of Query number ID
+                    idQuery = restOfQueries.substring(idQueryyy, restOfQueries.indexOf("<title>")-2); //number itself.
+                    int endInd = restOfQueries.indexOf("<desc>", startInd)-5; //searches for "<desc>" from starts index
+                    int descStart = restOfQueries.indexOf("<desc>", startInd);
+                    int descEnd = restOfQueries.indexOf("<narr>", startInd);
+                    String queryDescription = restOfQueries.substring(descStart + 19, descEnd).trim();
+                    String currQuery = restOfQueries.substring(startInd+8, endInd)+" "+queryDescription; //query itself.
+
+                    int endQuery = restOfQueries.indexOf("</top>", endInd);
+                    restOfQueries = restOfQueries.substring(endQuery);
+
+                    //set Id Query <num>"
+                    if (semantics)
+                        currQuery = addSemantics(currQuery);
+
+                    allQueries[numOfQueries] = new Document();
+                    allQueries[numOfQueries].setId(idQuery);
+                    allQueries[numOfQueries].setText(currQuery);
+                    querySet.add(allQueries[numOfQueries]);
+
+                    startInd = restOfQueries.indexOf("<title>"); //continues to the next doc in file
+                }
+
+                //allLinesInQueries = new StringBuilder(); //initialize
+                myBufferedReader.close();
+
+                LinkedList newList = new LinkedList(querySet);
+                querySet.clear();
+
+                try {
+                    LinkedList<Document> AfterParseQueries = parse.parseDocs(newList);
+                    lockAddToAfterParse.lock();      ///??????????????????????/
+                    queryAfterParse.addAll(AfterParseQueries);
+                    lockAddToAfterParse.unlock();      ///??????????????????????/
+                    // parseIndexrList++;
+                    //System.out.println("to Parser: " +parseIndexrList);
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            Alert alert = new Alert(Alert.AlertType.ERROR);
+            alert.setContentText("Error in folder path");
+            alert.show();
+        }
+        //stopReadFile = true;
+    }
+
+   /* private void readQueryFile() {
+
+        File queriesFile = new File(queryFilePath);
         //System.out.println("ReadFile");
         if (queriesFile != null) {
             allLinesInQueries = new StringBuilder();
@@ -193,7 +269,7 @@ public class Searcher {
             alert.show();
         }
         //stopReadFile = true;
-    }
+    }*/
 
     private String removeDelimiters(String word) {
         if (!word.equals("")) {
